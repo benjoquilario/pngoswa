@@ -9,26 +9,31 @@ export function HeroSection() {
       <div className="container hero-grid">
         <div className="anim-rise">
           <span className="section-label">Est. 2024 - Philippines</span>
-          <h1 className="hero-title">
-            Empowering <span className="gradient-text">NGO Social Workers</span>{" "}
-            Across the Philippines
-          </h1>
+          <div className="hero-banner">
+            <p className="hero-kicker">
+              Philippine NGO Social Workers Association
+            </p>
+            <h1 className="hero-title">
+              One National Banner for{" "}
+              <span className="gradient-text">NGO Social Workers</span>
+            </h1>
+          </div>
           <p className="hero-desc">
-            We are a unified community of NGO social workers committed to
-            advocacy, professional growth, and driving impactful social change
-            for communities nationwide.
+            Building one strong voice for advocacy, professional growth, and
+            shared social impact.
           </p>
-          <blockquote className="hero-quote">
-            &ldquo;Alone we can do so little; together we can do so much.&rdquo;
-            <cite>- Ricky A. Bunao, RSW, MPS-MPA, MCDRM, PhD (HC)</cite>
-          </blockquote>
+          <div className="hero-banner-tags" aria-label="Core pillars">
+            <span>Advocacy</span>
+            <span>Professional Growth</span>
+            <span>National Collaboration</span>
+          </div>
           <div className="hero-actions">
             <Link href="/membership" className="btn btn-cta btn-lg">
               <UserPlusIcon />
               Become a Member
             </Link>
-            <a href="#about" className="btn btn-outline btn-lg">
-              Learn More
+            <a href="#gallery" className="btn btn-outline btn-lg">
+              View Gallery
             </a>
           </div>
           <div className="hero-stats">
@@ -40,9 +45,9 @@ export function HeroSection() {
             </div>
             <div>
               <p className="hero-stat-val" style={{ color: "var(--crimson)" }}>
-                NGO
+                10+
               </p>
-              <p className="hero-stat-label">Sector Focus</p>
+              <p className="hero-stat-label">Core Programs</p>
             </div>
             <div>
               <p className="hero-stat-val" style={{ color: "var(--cyan)" }}>
@@ -76,7 +81,7 @@ export function HeroSection() {
                 <line x1="9" y1="9" x2="9.01" y2="9" />
                 <line x1="15" y1="9" x2="15.01" y2="9" />
               </svg>
-              Nationwide collaboration for social impact
+              Stronger together for every community
             </div>
           </div>
         </div>

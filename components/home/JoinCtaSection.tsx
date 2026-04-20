@@ -45,9 +45,9 @@ export function JoinCtaSection() {
               <UserPlusIcon />
               Become a Member
             </Link>
-            <a href="#about" className="btn btn-ghost btn-lg">
+            <Link href="/about" className="btn btn-ghost btn-lg">
               Learn About Us
-            </a>
+            </Link>
           </div>
         </div>
       </div>

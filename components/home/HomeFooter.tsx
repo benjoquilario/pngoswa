@@ -52,13 +52,13 @@ export function HomeFooter() {
             <h4>Quick Links</h4>
             <ul className="footer-links">
               <li>
-                <a href="#about">About Us</a>
+                <Link href="/about">About Us</Link>
               </li>
               <li>
-                <a href="#objectives">Objectives</a>
+                <Link href="/#objectives">Objectives</Link>
               </li>
               <li>
-                <a href="#programs">Programs</a>
+                <Link href="/about#programs">Programs</Link>
               </li>
               <li>
                 <Link href="/membership">Membership</Link>
@@ -69,16 +69,16 @@ export function HomeFooter() {
             <h4>Programs</h4>
             <ul className="footer-links">
               <li>
-                <a href="#programs">Advocacy & Policy</a>
+                <Link href="/about#programs">Advocacy & Policy</Link>
               </li>
               <li>
-                <a href="#programs">Professional Development</a>
+                <Link href="/about#programs">Professional Development</Link>
               </li>
               <li>
-                <a href="#programs">Health & Well-being</a>
+                <Link href="/about#programs">Health & Well-being</Link>
               </li>
               <li>
-                <a href="#programs">Crisis Intervention</a>
+                <Link href="/#gallery">Community Gallery</Link>
               </li>
             </ul>
           </div>
@@ -89,10 +89,10 @@ export function HomeFooter() {
                 <a href="mailto:info@pngoswa.org">info@pngoswa.org</a>
               </li>
               <li>
-                <a href="#membership">Membership Inquiry</a>
+                <Link href="/membership">Membership Inquiry</Link>
               </li>
               <li>
-                <a href="#programs">Partnership</a>
+                <Link href="/#faq">Membership FAQ</Link>
               </li>
             </ul>
           </div>

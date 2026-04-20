@@ -30,6 +30,89 @@ export const statements: Statement[] = [
   },
 ];
 
+export const aboutSummary =
+  "unites social workers in the NGO sector to strengthen advocacy, professional growth, and social impact across the Philippines.";
+
+export const aboutFullDescription =
+  "The Philippine NGO Social Workers Association (PNGOSWA) is a professional organization established in 2024, exclusively serving social workers in the non-governmental sector. We address the distinct needs of NGO-based practitioners from faith-based organizations and civil society groups to foundations and development projects while championing their rights, welfare, and professional excellence.";
+
+export type GalleryImage = {
+  src: string;
+  alt: string;
+  title: string;
+};
+
+export const galleryImages: GalleryImage[] = [
+  {
+    src: "/gallery-1.jpg",
+    alt: "PNGOSWA members during a field engagement activity",
+    title: "Community Field Engagement",
+  },
+  {
+    src: "/gallery02.jpg",
+    alt: "Social workers joining a collaborative planning session",
+    title: "Collaborative Planning Session",
+  },
+  {
+    src: "/gallery03.jpg",
+    alt: "Members participating in a regional capability workshop",
+    title: "Regional Capability Workshop",
+  },
+  {
+    src: "/gallery04.jpg",
+    alt: "Team photo from a social welfare outreach event",
+    title: "Outreach and Community Care",
+  },
+  {
+    src: "/gallery05.jpg",
+    alt: "PNGOSWA social workers in a knowledge-sharing activity",
+    title: "Knowledge Sharing Activity",
+  },
+  {
+    src: "/gallery06.jpg",
+    alt: "Association members during a leadership and advocacy forum",
+    title: "Leadership and Advocacy Forum",
+  },
+  {
+    src: "/gallery07.jpg",
+    alt: "Professional networking event among NGO social workers",
+    title: "Professional Networking Event",
+  },
+  {
+    src: "/gallery08.jpg",
+    alt: "PNGOSWA participants at a development-focused gathering",
+    title: "Development-Focused Gathering",
+  },
+];
+
+export type FaqItem = {
+  question: string;
+  answer: string;
+};
+
+export const faqs: FaqItem[] = [
+  {
+    question: "Why should I be part of PNGOSWA?",
+    answer:
+      "PNGOSWA gives NGO social workers a unified platform where your voice is represented, your welfare is advocated, and your profession is strengthened through shared standards and support.",
+  },
+  {
+    question: "What is in it for me as a member?",
+    answer:
+      "Members gain access to trainings, seminars, certifications, networking opportunities, and practical resources that support both day-to-day practice and long-term career growth.",
+  },
+  {
+    question: "Why would I join now?",
+    answer:
+      "Joining early allows you to help shape programs, influence sector priorities, and build meaningful partnerships with peers and institutions across the country.",
+  },
+  {
+    question: "What are the advantages if I join?",
+    answer:
+      "You receive formal membership recognition, learning opportunities, policy and legal support pathways, and stronger professional visibility in the NGO social work community.",
+  },
+];
+
 export type ProgramItem = { label: string; detail: string };
 export type Program = { title: string; items: ProgramItem[] };
 

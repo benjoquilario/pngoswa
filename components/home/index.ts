@@ -1,5 +1,7 @@
 export { AboutSection } from "./AboutSection";
+export { FaqSection } from "./FaqSection";
 export { FoundationSection } from "./FoundationSection";
+export { GallerySection } from "./GallerySection";
 export { HeroSection } from "./HeroSection";
 export { HomeFooter } from "./HomeFooter";
 export { HomeNavbar } from "./HomeNavbar";

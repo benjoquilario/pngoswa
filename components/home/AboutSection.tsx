@@ -1,3 +1,7 @@
+import Link from "next/link";
+
+import { aboutSummary } from "./data";
+
 export function AboutSection() {
   return (
     <section
@@ -14,17 +18,19 @@ export function AboutSection() {
           }}
         >
           <span className="section-label">About Us</span>
-          <h2 className="section-title">Who We Are</h2>
+          <h2 className="section-title">Meet PNGOSWA</h2>
           <p className="section-desc" style={{ margin: "1.25rem auto 0" }}>
-            The{" "}
             <strong>Philippine NGO Social Workers Association (PNGOSWA)</strong>{" "}
-            is a professional organization established in 2024, exclusively
-            serving social workers in the non-governmental sector. We address
-            the distinct needs of NGO-based practitioners - from faith-based
-            organizations and civil society groups to foundations and
-            development projects - championing their rights, welfare, and
-            professional excellence.
+            {aboutSummary}
           </p>
+          <div className="about-cta-row" style={{ marginTop: "1.5rem" }}>
+            <Link href="/about" className="btn btn-primary">
+              Read Full About Page
+            </Link>
+            <Link href="/about#programs" className="btn btn-outline">
+              See Our Programs
+            </Link>
+          </div>
         </div>
       </div>
     </section>

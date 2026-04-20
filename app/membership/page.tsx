@@ -1,78 +1,39 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useState } from "react";
+import { MembershipPageClient } from "@/components/membership/MembershipPageClient";
 
-import {
-  ApplicationFormSection,
-  CategoriesSection,
-  GeneralPrivilegesSection,
-  MembershipFooter,
-  MembershipHeaderSection,
-  MembershipNavbar,
-  PurposeSection,
-  ValiditySection,
-} from "@/components/membership";
-import type { MembershipFormState } from "@/components/membership/types";
+const membershipOgImage =
+  "/api/og?title=PNGOSWA%20Membership&description=Join%20the%20Philippine%20NGO%20Social%20Workers%20Association";
 
-const initialFormState: MembershipFormState = {
-  name: "",
-  profession: "",
-  organization: "",
-  prcLicense: "",
-  email: "",
-  contactNumber: "",
-  membershipType: "",
-  docs: [],
-  agreed: false,
+export const metadata: Metadata = {
+  title: "Membership | Philippine NGO Social Workers Association",
+  description:
+    "Apply for PNGOSWA membership and explore scope, requirements, and benefits for NGO social workers in the Philippines.",
+  keywords: [
+    "PNGOSWA membership",
+    "Philippine NGO Social Workers Association membership",
+    "Philippine NGO membership",
+    "Ph NGO membership",
+  ],
+  alternates: {
+    canonical: "/membership",
+  },
+  openGraph: {
+    title: "Membership | PNGOSWA",
+    description:
+      "Join PNGOSWA and access membership benefits, programs, and development support for NGO social workers.",
+    url: "/membership",
+    images: [membershipOgImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Membership | PNGOSWA",
+    description:
+      "Join PNGOSWA and access membership benefits, programs, and development support for NGO social workers.",
+    images: [membershipOgImage],
+  },
 };
 
 export default function MembershipPage() {
-  const [form, setForm] = useState<MembershipFormState>(initialFormState);
-
-  const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-  };
-
-  const toggleDoc = (doc: string) => {
-    setForm((prev) => ({
-      ...prev,
-      docs: prev.docs.includes(doc)
-        ? prev.docs.filter((item) => item !== doc)
-        : [...prev.docs, doc],
-    }));
-  };
-
-  const handleAgreementChange = (agreed: boolean) => {
-    setForm((prev) => ({ ...prev, agreed }));
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    alert(
-      "Thank you for your application! We will review your submission and get back to you soon.",
-    );
-  };
-
-  return (
-    <>
-      <MembershipNavbar />
-
-      <main className="flex-1">
-        <MembershipHeaderSection />
-        <PurposeSection />
-        <CategoriesSection />
-        <GeneralPrivilegesSection />
-        <ValiditySection />
-        <ApplicationFormSection
-          form={form}
-          onInputChange={handleInput}
-          onToggleDoc={toggleDoc}
-          onAgreementChange={handleAgreementChange}
-          onSubmit={handleSubmit}
-        />
-      </main>
-
-      <MembershipFooter />
-    </>
-  );
+  return <MembershipPageClient />;
 }

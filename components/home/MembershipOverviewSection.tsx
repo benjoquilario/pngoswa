@@ -1,4 +1,4 @@
-import Image from "next/image";
+// import Image from "next/image";
 
 import { memberBenefits, membershipRequirements, scopeCoverage } from "./data";
 
@@ -38,7 +38,7 @@ export function MembershipOverviewSection() {
             </ul>
           </article>
         </div>
-        <div className="impact-strip">
+        {/* <div className="impact-strip">
           <div className="impact-text">
             <p>
               By implementing these programs and services, PNGOSWA can
@@ -59,7 +59,7 @@ export function MembershipOverviewSection() {
             className="impact-img"
             loading="lazy"
           />
-        </div>
+        </div> */}
       </div>
     </section>
   );

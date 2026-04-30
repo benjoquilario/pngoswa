@@ -1,11 +1,29 @@
 export type MembershipFormState = {
-  name: string;
-  profession: string;
-  organization: string;
-  prcLicense: string;
-  email: string;
-  contactNumber: string;
-  membershipType: string;
-  docs: string[];
-  agreed: boolean;
-};
+  lastName: string
+  firstName: string
+  middleName: string
+  gender: string
+  dateOfBirth: string
+  civilStatus: string
+  prcLicense: string
+  dateOfRegistration: string
+  contactNumber: string
+  email: string
+  region: string
+  organization: string
+  officeAddress: string
+  position: string
+  employmentStatus: string
+  lengthOfService: string
+  areaOfPractice: string
+  degree: string
+  school: string
+  yearGraduated: string
+  postgraduateStudies: string
+  specializations: string
+  otherOrganizations: string
+  membershipType: string
+  paymentMode: string
+  isConventionAttendee: string
+  agreed: boolean
+}

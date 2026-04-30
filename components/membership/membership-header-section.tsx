@@ -1,6 +1,6 @@
-import Link from "next/link";
+import Link from "next/link"
 
-import { ArrowLeftIcon } from "./icons";
+import { ArrowLeftIcon } from "./icons"
 
 export function MembershipHeaderSection() {
   return (
@@ -38,5 +38,5 @@ export function MembershipHeaderSection() {
       </div>
       <div className="gradient-bar" />
     </section>
-  );
+  )
 }

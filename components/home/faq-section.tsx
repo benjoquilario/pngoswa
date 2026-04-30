@@ -1,4 +1,4 @@
-import { faqs } from "./data";
+import { faqs } from "./data"
 
 export function FaqSection() {
   return (
@@ -25,5 +25,5 @@ export function FaqSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

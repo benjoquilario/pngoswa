@@ -1,12 +1,12 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from "next/image"
+import Link from "next/link"
 
-import { UserPlusIcon } from "./icons";
+import { UserPlusIcon } from "./icons"
 
 export function HeroSection() {
   return (
     <section className="hero">
-      <div className="container hero-grid">
+      <div className="hero-grid container">
         <div className="anim-rise">
           <span className="section-label">Est. 2024 - Philippines</span>
           <div className="hero-banner">
@@ -60,7 +60,7 @@ export function HeroSection() {
         <div className="anim-rise d2">
           <div className="hero-img-wrap">
             <Image
-              src="/hero.jpg"
+              src="/helping-others.png"
               alt="Social workers collaborating together"
               width={1200}
               height={900}
@@ -88,5 +88,5 @@ export function HeroSection() {
       </div>
       <div className="gradient-bar" />
     </section>
-  );
+  )
 }

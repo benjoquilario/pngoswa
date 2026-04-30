@@ -1,4 +1,4 @@
-type IconProps = { className?: string };
+type IconProps = { className?: string }
 
 export function ArrowLeftIcon() {
   return (
@@ -15,7 +15,7 @@ export function ArrowLeftIcon() {
       <line x1="19" y1="12" x2="5" y2="12" />
       <polyline points="12 19 5 12 12 5" />
     </svg>
-  );
+  )
 }
 
 export function CheckIcon({ className }: IconProps) {
@@ -33,7 +33,7 @@ export function CheckIcon({ className }: IconProps) {
     >
       <polyline points="20 6 9 17 4 12" />
     </svg>
-  );
+  )
 }
 
 export function UserPlusIcon() {
@@ -53,5 +53,5 @@ export function UserPlusIcon() {
       <line x1="20" y1="8" x2="20" y2="14" />
       <line x1="23" y1="11" x2="17" y2="11" />
     </svg>
-  );
+  )
 }

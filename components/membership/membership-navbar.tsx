@@ -1,33 +1,32 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
 
-import Image from "next/image";
+import { UserPlusIcon } from "./icons"
 
-import { UserPlusIcon } from "./icons";
-import Link from "next/link";
-
-export function HomeNavbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+export function MembershipNavbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsMenuOpen(false);
-        menuButtonRef.current?.focus();
+        setIsMenuOpen(false)
+        menuButtonRef.current?.focus()
       }
-    };
+    }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMenuOpen]);
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isMenuOpen])
 
   const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+    setIsMenuOpen(false)
+  }
 
   return (
     <nav
@@ -51,22 +50,18 @@ export function HomeNavbar() {
           <Link href="/about" className="nav-link">
             About
           </Link>
+          <Link href="/#objectives" className="nav-link">
+            Objectives
+          </Link>
           <Link href="/about#programs" className="nav-link">
             Programs
-          </Link>
-          <Link href="/#gallery" className="nav-link">
-            Gallery
-          </Link>
-          <Link href="/#faq" className="nav-link">
-            FAQ
           </Link>
           <Link href="/membership" className="nav-link">
             Membership
           </Link>
         </div>
-        <Link href="/membership" className="btn btn-cta nav-cta">
-          <UserPlusIcon />
-          Become a Member
+        <Link href="/membership/apply" className="btn btn-cta nav-cta">
+          <UserPlusIcon /> Apply Now
         </Link>
 
         <button
@@ -78,7 +73,7 @@ export function HomeNavbar() {
           }
           aria-expanded={isMenuOpen}
           aria-haspopup="menu"
-          aria-controls="home-mobile-menu"
+          aria-controls="membership-mobile-menu"
           onClick={() => setIsMenuOpen((prev) => !prev)}
         >
           <span className="nav-toggle-icon" aria-hidden="true">
@@ -90,7 +85,7 @@ export function HomeNavbar() {
       </div>
 
       <div
-        id="home-mobile-menu"
+        id="membership-mobile-menu"
         className={`nav-mobile-panel ${isMenuOpen ? "open" : ""}`}
         role="region"
         aria-label="Mobile navigation"
@@ -102,21 +97,18 @@ export function HomeNavbar() {
             About
           </Link>
           <Link
+            href="/#objectives"
+            className="nav-mobile-link"
+            onClick={closeMenu}
+          >
+            Objectives
+          </Link>
+          <Link
             href="/about#programs"
             className="nav-mobile-link"
             onClick={closeMenu}
           >
             Programs
-          </Link>
-          <Link
-            href="/#gallery"
-            className="nav-mobile-link"
-            onClick={closeMenu}
-          >
-            Gallery
-          </Link>
-          <Link href="/#faq" className="nav-mobile-link" onClick={closeMenu}>
-            FAQ
           </Link>
           <Link
             href="/membership"
@@ -126,15 +118,15 @@ export function HomeNavbar() {
             Membership
           </Link>
           <Link
-            href="/membership"
+            href="/membership/apply"
             className="btn btn-cta nav-mobile-cta"
             onClick={closeMenu}
           >
             <UserPlusIcon />
-            Become a Member
+            Apply Now
           </Link>
         </div>
       </div>
     </nav>
-  );
+  )
 }

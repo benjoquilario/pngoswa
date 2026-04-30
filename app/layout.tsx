@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
-import { Lexend, Merriweather } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from "next"
+import { Lexend, Merriweather } from "next/font/google"
+
+import "./globals.css"
 
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://pngoswa.org"
-).replace(/\/$/, "");
+).replace(/\/$/, "")
 
 const defaultOgImage =
-  "/api/og?title=PNGOSWA&description=Philippine%20NGO%20Social%20Workers%20Association";
+  "/api/og?title=PNGOSWA&description=Philippine%20NGO%20Social%20Workers%20Association"
 
 const lexend = Lexend({
   variable: "--font-lexend",
   subsets: ["latin"],
   display: "swap",
-});
+})
 
 const merriweather = Merriweather({
   variable: "--font-merriweather",
   subsets: ["latin"],
   weight: ["400", "700", "900"],
   display: "swap",
-});
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -75,7 +76,7 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-};
+}
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -108,12 +109,12 @@ const structuredData = {
       url: `${siteUrl}/membership`,
     },
   ],
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html
@@ -121,7 +122,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${lexend.variable} ${merriweather.variable} antialiased`}
     >
-      <body className="min-h-dvh flex flex-col">
+      <body className="flex min-h-dvh flex-col">
         {children}
         <script
           type="application/ld+json"
@@ -129,5 +130,5 @@ export default function RootLayout({
         />
       </body>
     </html>
-  );
+  )
 }

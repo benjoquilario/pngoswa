@@ -40,5 +40,5 @@ export function ValiditySection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

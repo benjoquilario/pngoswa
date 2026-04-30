@@ -1,6 +1,6 @@
-import Link from "next/link";
+import Link from "next/link"
 
-import { UserPlusIcon } from "./icons";
+import { UserPlusIcon } from "./icons"
 
 export function JoinCtaSection() {
   return (
@@ -52,5 +52,5 @@ export function JoinCtaSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

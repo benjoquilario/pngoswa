@@ -1,11 +1,11 @@
-import type { MetadataRoute } from "next";
+import type { MetadataRoute } from "next"
 
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://pngoswa.org"
-).replace(/\/$/, "");
+).replace(/\/$/, "")
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const lastModified = new Date()
 
   return [
     {
@@ -26,5 +26,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-  ];
+  ]
 }

@@ -1,6 +1,6 @@
-import Link from "next/link";
+import Link from "next/link"
 
-import { aboutSummary } from "./data";
+import { aboutSummary } from "./data"
 
 export function AboutSection() {
   return (
@@ -34,5 +34,5 @@ export function AboutSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

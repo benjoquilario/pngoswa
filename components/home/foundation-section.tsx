@@ -1,11 +1,11 @@
-import { statements } from "./data";
-import { EyeIcon, FlagIcon, TargetIcon } from "./icons";
+import { statements } from "./data"
+import { EyeIcon, FlagIcon, TargetIcon } from "./icons"
 
 const statementIcons = {
   eye: EyeIcon,
   target: TargetIcon,
   flag: FlagIcon,
-} as const;
+} as const
 
 export function FoundationSection() {
   return (
@@ -21,7 +21,7 @@ export function FoundationSection() {
         </div>
         <div className="vmg-grid">
           {statements.map((statement) => {
-            const Icon = statementIcons[statement.icon];
+            const Icon = statementIcons[statement.icon]
 
             return (
               <article
@@ -38,10 +38,10 @@ export function FoundationSection() {
                 <h3 style={{ color: statement.accent }}>{statement.name}</h3>
                 <p>{statement.copy}</p>
               </article>
-            );
+            )
           })}
         </div>
       </div>
     </section>
-  );
+  )
 }

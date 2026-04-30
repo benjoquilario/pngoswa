@@ -1,10 +1,10 @@
 export type Statement = {
-  name: string;
-  copy: string;
-  icon: "eye" | "target" | "flag";
-  bg: string;
-  accent: string;
-};
+  name: string
+  copy: string
+  icon: "eye" | "target" | "flag"
+  bg: string
+  accent: string
+}
 
 export const statements: Statement[] = [
   {
@@ -28,19 +28,26 @@ export const statements: Statement[] = [
     bg: "#F5F0FF",
     accent: "var(--violet)",
   },
-];
+]
 
 export const aboutSummary =
-  "unites social workers in the NGO sector to strengthen advocacy, professional growth, and social impact across the Philippines.";
+  "unites social workers in the NGO sector to strengthen advocacy, professional growth, and social impact across the Philippines."
 
 export const aboutFullDescription =
-  "The Philippine NGO Social Workers Association (PNGOSWA) is a professional organization established in 2024, exclusively serving social workers in the non-governmental sector. We address the distinct needs of NGO-based practitioners from faith-based organizations and civil society groups to foundations and development projects while championing their rights, welfare, and professional excellence.";
+  "The Philippine NGO Social Workers Association (PNGOSWA) is a professional organization established in 2024, exclusively serving social workers in the non-governmental sector. We address the distinct needs of NGO-based practitioners from faith-based organizations and civil society groups to foundations and development projects while championing their rights, welfare, and professional excellence."
 
 export type GalleryImage = {
-  src: string;
-  alt: string;
-  title: string;
-};
+  src: string
+  alt: string
+  title: string
+}
+
+export type Officer = {
+  name: string
+  position: string
+  src: string
+  objectPosition?: string
+}
 
 export const galleryImages: GalleryImage[] = [
   {
@@ -83,12 +90,71 @@ export const galleryImages: GalleryImage[] = [
     alt: "PNGOSWA participants at a development-focused gathering",
     title: "Development-Focused Gathering",
   },
-];
+]
+
+export const officers: Officer[] = [
+  {
+    name: "Ricky A Bunao",
+    position: "President",
+    src: "/PRESIDENT-RICKY%20A%20BUNAO.jpg",
+  },
+  {
+    name: "Ma Rachel C Bismonte",
+    position: "Vice President for Internal Affairs",
+    src: "/VPI-Bismonte%2C%20Ma%20Rachel%20C.jpg",
+  },
+  {
+    name: "Ronnel T Golimlim",
+    position: "Vice President for External Affairs",
+    src: "/VPE-Ronnel%20T.%20Golimlim.jpg",
+  },
+  {
+    name: "Maria Gecilla F Alalid",
+    position: "Secretary",
+    src: "/Secretary-Maria%20Gecilla%20F%20Alalid.jpg",
+  },
+  {
+    name: "Melanie Mananquil",
+    position: "Assistant Secretary",
+    src: "/Secretary-2-Melanie%20Mananquil.jpg",
+  },
+  {
+    name: "Adrian Nicolas Diaz",
+    position: "Treasurer",
+    src: "/Treasurer-Adrian%20Nicolas%20Diaz.jpg",
+  },
+  {
+    name: "Avelino Jr B Baro",
+    position: "Auditor",
+    src: "/AUDITOR-BARO%2C%20Avelino%20Jr%20B.jpg",
+    objectPosition: "center top",
+  },
+  {
+    name: "Francheska Maano",
+    position: "Public Relations Officer - NCR",
+    src: "/PRO-NCR%20-%20Francheska%20Maano.jpg",
+  },
+  {
+    name: "Flohelda Crispin",
+    position: "Public Relations Officer - Luzon",
+    src: "/PRO-Luzon-Flohelda%20Crispin.jpg",
+  },
+  {
+    name: "Joy Cagadas-Ruotolo",
+    position: "Public Relations Officer - Visayas",
+    src: "/PRO-Visatas-Joy%20Cagadas-Ruotolo.jpg",
+  },
+  {
+    name: "Marissa Donida",
+    position: "Public Relations Officer",
+    src: "/PRO-Marissa%20Donida.jpg",
+  },
+]
 
 export type FaqItem = {
-  question: string;
-  answer: string;
-};
+  question: string
+  answer: string
+}
 
 export const faqs: FaqItem[] = [
   {
@@ -111,10 +177,10 @@ export const faqs: FaqItem[] = [
     answer:
       "You receive formal membership recognition, learning opportunities, policy and legal support pathways, and stronger professional visibility in the NGO social work community.",
   },
-];
+]
 
-export type ProgramItem = { label: string; detail: string };
-export type Program = { title: string; items: ProgramItem[] };
+export type ProgramItem = { label: string; detail: string }
+export type Program = { title: string; items: ProgramItem[] }
 
 export const objectives = [
   "Advocate for the rights, welfare, and protection of all NGO social workers, and lobby for fair wages, benefits, and working conditions.",
@@ -124,7 +190,7 @@ export const objectives = [
   "Implement programs that support mental health and overall well-being of NGO social workers.",
   "Offer technical assistance and capacity-building support to NGOs to improve human resource and organizational practices.",
   "Build strong local and international partnerships for the continued advancement of NGO social work in the Philippines.",
-];
+]
 
 export const programs: Program[] = [
   {
@@ -292,7 +358,7 @@ export const programs: Program[] = [
       },
     ],
   },
-];
+]
 
 export const scopeCoverage = [
   "Community-based NGOs",
@@ -303,7 +369,7 @@ export const scopeCoverage = [
   "Private school practitioners",
   "Private hospitals and clinics practitioners",
   "Individual practitioners and consultants",
-];
+]
 
 export const membershipRequirements = [
   "Complete the PNGOSWA membership application form (online system in development).",
@@ -312,11 +378,11 @@ export const membershipRequirements = [
   "Attend PNGOSWA orientation and seminars.",
   "Abide by PNGOSWA policies, code of conduct, and association standards.",
   "Actively support association programs, services, and activities.",
-];
+]
 
 export const memberBenefits = [
   "PNGOSWA membership identification and controlled member verification.",
   "Certificate of participation for orientation, seminars, trainings, and conferences.",
   "Access to networking opportunities, professional development updates, advocacy participation, committees, and recognition pathways.",
   "Access to discounted event rates and endorsements for local and international training activities.",
-];
+]

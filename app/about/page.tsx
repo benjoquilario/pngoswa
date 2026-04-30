@@ -1,20 +1,20 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata } from "next"
+import Link from "next/link"
 
 import {
   FoundationSection,
   HomeFooter,
   HomeNavbar,
   ProgramsSection,
-} from "@/components/home";
+} from "@/components/home"
 import {
   aboutFullDescription,
   objectives,
   scopeCoverage,
-} from "@/components/home/data";
+} from "@/components/home/data"
 
 const aboutOgImage =
-  "/api/og?title=About%20PNGOSWA&description=Philippine%20NGO%20Social%20Workers%20Association";
+  "/api/og?title=About%20PNGOSWA&description=Philippine%20NGO%20Social%20Workers%20Association"
 
 export const metadata: Metadata = {
   title: "About Philippine NGO Social Workers Association",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
       "Learn about PNGOSWA, the Philippine NGO Social Workers Association, and our work for NGO social workers in the Philippines.",
     images: [aboutOgImage],
   },
-};
+}
 
 export default function AboutPage() {
   return (
@@ -85,6 +85,9 @@ export default function AboutPage() {
               <Link href="/membership" className="btn btn-cta">
                 Become a Member
               </Link>
+              <Link href="/ethics" className="btn btn-ghost">
+                Code of Ethics & Policies
+              </Link>
               <Link href="/#gallery" className="btn btn-ghost">
                 View Community Gallery
               </Link>
@@ -97,7 +100,7 @@ export default function AboutPage() {
           className="section-py"
           style={{ background: "var(--surface-warm)" }}
         >
-          <div className="container about-grid">
+          <div className="about-grid container">
             <article className="card about-card">
               <h2>Who We Serve</h2>
               <p>
@@ -176,5 +179,5 @@ export default function AboutPage() {
 
       <HomeFooter />
     </>
-  );
+  )
 }

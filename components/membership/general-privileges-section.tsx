@@ -1,5 +1,5 @@
-import { generalPrivileges } from "./data";
-import { CheckIcon } from "./icons";
+import { generalPrivileges } from "./data"
+import { CheckIcon } from "./icons"
 
 export function GeneralPrivilegesSection() {
   return (
@@ -22,5 +22,5 @@ export function GeneralPrivilegesSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

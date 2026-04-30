@@ -1,6 +1,6 @@
-import Image from "next/image";
+import Image from "next/image"
 
-import { objectives } from "./data";
+import { objectives } from "./data"
 
 export function ObjectivesSection() {
   return (
@@ -37,5 +37,5 @@ export function ObjectivesSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import { categories } from "./data";
+import { categories } from "./data"
 
 export function CategoriesSection() {
   return (
@@ -72,5 +72,5 @@ export function CategoriesSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

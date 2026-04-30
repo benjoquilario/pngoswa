@@ -1,8 +1,8 @@
-export { ApplicationFormSection } from "./ApplicationFormSection";
-export { CategoriesSection } from "./CategoriesSection";
-export { GeneralPrivilegesSection } from "./GeneralPrivilegesSection";
-export { MembershipFooter } from "./MembershipFooter";
-export { MembershipHeaderSection } from "./MembershipHeaderSection";
-export { MembershipNavbar } from "./MembershipNavbar";
-export { PurposeSection } from "./PurposeSection";
-export { ValiditySection } from "./ValiditySection";
+export { ApplicationFormSection } from "./application-form-section"
+export { CategoriesSection } from "./categories-section"
+export { GeneralPrivilegesSection } from "./general-privileges-section"
+export { MembershipFooter } from "./membership-footer"
+export { MembershipHeaderSection } from "./membership-header-section"
+export { MembershipNavbar } from "./membership-navbar"
+export { PurposeSection } from "./purpose-section"
+export { ValiditySection } from "./validity-section"

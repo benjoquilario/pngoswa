@@ -17,5 +17,5 @@ export function PurposeSection() {
         </p>
       </div>
     </section>
-  );
+  )
 }

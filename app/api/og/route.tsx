@@ -1,48 +1,48 @@
-import { ImageResponse } from "next/og";
+import { ImageResponse } from "next/og"
 
-export const runtime = "edge";
+export const runtime = "edge"
 
-const DEFAULT_TITLE = "PNGOSWA";
-const DEFAULT_DESCRIPTION = "Philippine NGO Social Workers Association";
+const DEFAULT_TITLE = "PNGOSWA"
+const DEFAULT_DESCRIPTION = "Philippine NGO Social Workers Association"
 
 function sanitizeText(
   input: string | null,
   fallback: string,
-  maxLength: number,
+  maxLength: number
 ) {
-  if (!input) return fallback;
+  if (!input) return fallback
 
-  const normalized = input.replace(/\s+/g, " ").trim();
-  if (!normalized) return fallback;
+  const normalized = input.replace(/\s+/g, " ").trim()
+  if (!normalized) return fallback
 
-  return normalized.slice(0, maxLength);
+  return normalized.slice(0, maxLength)
 }
 
 function getTitleSize(title: string) {
-  if (title.length <= 22) return 104;
-  if (title.length <= 34) return 90;
-  if (title.length <= 50) return 76;
-  return 64;
+  if (title.length <= 22) return 104
+  if (title.length <= 34) return 90
+  if (title.length <= 50) return 76
+  return 64
 }
 
 function getDescriptionSize(description: string) {
-  if (description.length <= 70) return 40;
-  if (description.length <= 120) return 34;
-  return 30;
+  if (description.length <= 70) return 40
+  if (description.length <= 120) return 34
+  return 30
 }
 
 export function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(request.url)
 
-  const title = sanitizeText(searchParams.get("title"), DEFAULT_TITLE, 70);
+  const title = sanitizeText(searchParams.get("title"), DEFAULT_TITLE, 70)
   const description = sanitizeText(
     searchParams.get("description"),
     DEFAULT_DESCRIPTION,
-    160,
-  );
+    160
+  )
 
-  const titleSize = getTitleSize(title);
-  const descriptionSize = getDescriptionSize(description);
+  const titleSize = getTitleSize(title)
+  const descriptionSize = getDescriptionSize(description)
 
   return new ImageResponse(
     <div
@@ -215,6 +215,6 @@ export function GET(request: Request) {
     {
       width: 1200,
       height: 630,
-    },
-  );
+    }
+  )
 }

@@ -1,106 +1,105 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react"
+import Image from "next/image"
 
-import Image from "next/image";
-
-import { galleryImages } from "./data";
+import { galleryImages } from "./data"
 
 export function GallerySection() {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const overlayRef = useRef<HTMLDivElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const closeLightbox = useCallback(() => {
-    setActiveIndex(null);
-    triggerButtonRef.current?.focus();
-  }, []);
+    setActiveIndex(null)
+    triggerButtonRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     if (activeIndex === null) {
-      return;
+      return
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
 
     requestAnimationFrame(() => {
-      closeButtonRef.current?.focus();
-    });
+      closeButtonRef.current?.focus()
+    })
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeLightbox();
-        return;
+        closeLightbox()
+        return
       }
 
       if (event.key === "ArrowRight") {
         setActiveIndex((prev) => {
-          if (prev === null) return 0;
-          return (prev + 1) % galleryImages.length;
-        });
+          if (prev === null) return 0
+          return (prev + 1) % galleryImages.length
+        })
       }
 
       if (event.key === "ArrowLeft") {
         setActiveIndex((prev) => {
-          if (prev === null) return 0;
-          return (prev - 1 + galleryImages.length) % galleryImages.length;
-        });
+          if (prev === null) return 0
+          return (prev - 1 + galleryImages.length) % galleryImages.length
+        })
       }
 
       if (event.key === "Tab") {
-        const overlay = overlayRef.current;
-        if (!overlay) return;
+        const overlay = overlayRef.current
+        if (!overlay) return
 
         const focusable = Array.from(
           overlay.querySelectorAll<HTMLElement>(
-            'button, [href], [tabindex]:not([tabindex="-1"])',
-          ),
-        ).filter((element) => !element.hasAttribute("disabled"));
+            'button, [href], [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((element) => !element.hasAttribute("disabled"))
 
-        if (focusable.length === 0) return;
+        if (focusable.length === 0) return
 
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        const activeElement = document.activeElement;
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        const activeElement = document.activeElement
 
         if (event.shiftKey && activeElement === first) {
-          event.preventDefault();
-          last.focus();
-          return;
+          event.preventDefault()
+          last.focus()
+          return
         }
 
         if (!event.shiftKey && activeElement === last) {
-          event.preventDefault();
-          first.focus();
+          event.preventDefault()
+          first.focus()
         }
       }
-    };
+    }
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown)
 
     return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [activeIndex, closeLightbox]);
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [activeIndex, closeLightbox])
 
-  const activeImage = activeIndex === null ? null : galleryImages[activeIndex];
+  const activeImage = activeIndex === null ? null : galleryImages[activeIndex]
 
   const showPrevImage = () => {
     setActiveIndex((prev) => {
-      if (prev === null) return 0;
-      return (prev - 1 + galleryImages.length) % galleryImages.length;
-    });
-  };
+      if (prev === null) return 0
+      return (prev - 1 + galleryImages.length) % galleryImages.length
+    })
+  }
 
   const showNextImage = () => {
     setActiveIndex((prev) => {
-      if (prev === null) return 0;
-      return (prev + 1) % galleryImages.length;
-    });
-  };
+      if (prev === null) return 0
+      return (prev + 1) % galleryImages.length
+    })
+  }
 
   return (
     <section
@@ -124,8 +123,8 @@ export function GallerySection() {
               className="gallery-card"
               aria-label={`Open gallery image ${index + 1}`}
               onClick={(event) => {
-                triggerButtonRef.current = event.currentTarget;
-                setActiveIndex(index);
+                triggerButtonRef.current = event.currentTarget
+                setActiveIndex(index)
               }}
             >
               <div className="gallery-img-wrap">
@@ -161,8 +160,8 @@ export function GallerySection() {
               type="button"
               className="lightbox-close"
               onClick={(event) => {
-                event.stopPropagation();
-                closeLightbox();
+                event.stopPropagation()
+                closeLightbox()
               }}
               aria-label="Close image viewer"
             >
@@ -173,8 +172,8 @@ export function GallerySection() {
               type="button"
               className="lightbox-nav lightbox-prev"
               onClick={(event) => {
-                event.stopPropagation();
-                showPrevImage();
+                event.stopPropagation()
+                showPrevImage()
               }}
               aria-label="Show previous image"
             >
@@ -199,8 +198,8 @@ export function GallerySection() {
               type="button"
               className="lightbox-nav lightbox-next"
               onClick={(event) => {
-                event.stopPropagation();
-                showNextImage();
+                event.stopPropagation()
+                showNextImage()
               }}
               aria-label="Show next image"
             >
@@ -210,5 +209,5 @@ export function GallerySection() {
         ) : null}
       </div>
     </section>
-  );
+  )
 }

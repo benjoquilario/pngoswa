@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { MembershipPageClient } from "@/components/membership/MembershipPageClient";
+import { MembershipPageClient } from "@/components/membership/membership-page-client";
 
 const membershipOgImage =
   "/api/og?title=PNGOSWA%20Membership&description=Join%20the%20Philippine%20NGO%20Social%20Workers%20Association";
@@ -8,7 +8,7 @@ const membershipOgImage =
 export const metadata: Metadata = {
   title: "Membership | Philippine NGO Social Workers Association",
   description:
-    "Apply for PNGOSWA membership and explore scope, requirements, and benefits for NGO social workers in the Philippines.",
+    "Apply for PNGOSWA membership and review categories, privileges, validity, renewal, and membership support for NGO social workers in the Philippines.",
   keywords: [
     "PNGOSWA membership",
     "Philippine NGO Social Workers Association membership",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Membership | PNGOSWA",
     description:
-      "Join PNGOSWA and access membership benefits, programs, and development support for NGO social workers.",
+      "Join PNGOSWA and access programs, development support, and membership privileges for NGO social workers.",
     url: "/membership",
     images: [membershipOgImage],
   },
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Membership | PNGOSWA",
     description:
-      "Join PNGOSWA and access membership benefits, programs, and development support for NGO social workers.",
+      "Join PNGOSWA and access programs, development support, and membership privileges for NGO social workers.",
     images: [membershipOgImage],
   },
 };

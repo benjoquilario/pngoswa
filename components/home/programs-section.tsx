@@ -1,4 +1,4 @@
-import { programs } from "./data";
+import { programs } from "./data"
 
 export function ProgramsSection() {
   return (
@@ -33,5 +33,5 @@ export function ProgramsSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

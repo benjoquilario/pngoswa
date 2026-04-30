@@ -1,22 +1,22 @@
 export type MembershipCategory = {
-  name: string;
-  badge: string;
-  badgeBg: string;
-  accent: string;
-  fee: string;
-  feeNote: string;
-  annual: string;
-  eligibility: string[];
-  privileges: string[];
-  validity: string;
-  requirements: string[];
-};
+  name: string
+  badge: string
+  badgeBg: string
+  accent: string
+  fee: string
+  feeNote: string
+  annual: string
+  eligibility: string[]
+  privileges: string[]
+  validity: string
+  requirements: string[]
+}
 
 export type MembershipTypeOption = {
-  value: string;
-  label: string;
-  desc: string;
-};
+  value: string
+  label: string
+  desc: string
+}
 
 export const categories: MembershipCategory[] = [
   {
@@ -98,7 +98,7 @@ export const categories: MembershipCategory[] = [
       "Contact details",
     ],
   },
-];
+]
 
 export const generalPrivileges = [
   "Official Certificate of Membership",
@@ -109,14 +109,14 @@ export const generalPrivileges = [
   "Participation in advocacy initiatives, consultations, and policy discussions",
   "Inclusion in official membership registry",
   "Eligibility for recognition and awards programs",
-];
+]
 
 export const docOptions = [
   "CV / Resume",
   "Proof of Employment / Leadership Role",
   "PRC License (if applicable)",
   "Recommendation / Endorsement (for Honorary Membership)",
-];
+]
 
 export const membershipTypeOptions: MembershipTypeOption[] = [
   {
@@ -134,4 +134,4 @@ export const membershipTypeOptions: MembershipTypeOption[] = [
     label: "Honorary Member",
     desc: "Distinguished / retired professionals - By nomination",
   },
-];
+]

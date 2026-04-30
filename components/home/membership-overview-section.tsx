@@ -1,6 +1,6 @@
 // import Image from "next/image";
 
-import { memberBenefits, membershipRequirements, scopeCoverage } from "./data";
+import { memberBenefits, membershipRequirements, scopeCoverage } from "./data"
 
 export function MembershipOverviewSection() {
   return (
@@ -62,5 +62,5 @@ export function MembershipOverviewSection() {
         </div> */}
       </div>
     </section>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from "next/image"
+import Link from "next/link"
 
-export function MembershipFooter() {
+export function HomeFooter() {
   return (
     <footer className="footer">
       <div className="container">
@@ -43,24 +43,45 @@ export function MembershipFooter() {
                 maxWidth: "20rem",
               }}
             >
-              Empowering NGO social workers through advocacy, professional
-              development, and solidarity since 2024.
+              Philippine NGO Social Workers Association - empowering NGO social
+              workers through advocacy, professional development, and solidarity
+              since 2024.
             </p>
           </div>
           <div>
             <h4>Quick Links</h4>
             <ul className="footer-links">
               <li>
-                <Link href="/#about">About Us</Link>
+                <Link href="/about">About Us</Link>
               </li>
               <li>
                 <Link href="/#objectives">Objectives</Link>
               </li>
               <li>
-                <Link href="/#programs">Programs</Link>
+                <Link href="/#officers">Officers</Link>
               </li>
               <li>
-                <a href="#categories">Membership</a>
+                <Link href="/about#programs">Programs</Link>
+              </li>
+              <li>
+                <Link href="/membership">Membership</Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4>Programs</h4>
+            <ul className="footer-links">
+              <li>
+                <Link href="/about#programs">Advocacy & Policy</Link>
+              </li>
+              <li>
+                <Link href="/about#programs">Professional Development</Link>
+              </li>
+              <li>
+                <Link href="/about#programs">Health & Well-being</Link>
+              </li>
+              <li>
+                <Link href="/#gallery">Community Gallery</Link>
               </li>
             </ul>
           </div>
@@ -71,7 +92,10 @@ export function MembershipFooter() {
                 <a href="mailto:info@pngoswa.org">info@pngoswa.org</a>
               </li>
               <li>
-                <a href="#apply">Apply for Membership</a>
+                <Link href="/membership">Membership Inquiry</Link>
+              </li>
+              <li>
+                <Link href="/#faq">Membership FAQ</Link>
               </li>
             </ul>
           </div>
@@ -81,5 +105,5 @@ export function MembershipFooter() {
         </div>
       </div>
     </footer>
-  );
+  )
 }

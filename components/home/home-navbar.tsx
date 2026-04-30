@@ -1,33 +1,32 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
 
-import Image from "next/image";
-import Link from "next/link";
+import { UserPlusIcon } from "./icons"
 
-import { UserPlusIcon } from "./icons";
-
-export function MembershipNavbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+export function HomeNavbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsMenuOpen(false);
-        menuButtonRef.current?.focus();
+        setIsMenuOpen(false)
+        menuButtonRef.current?.focus()
       }
-    };
+    }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMenuOpen]);
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isMenuOpen])
 
   const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+    setIsMenuOpen(false)
+  }
 
   return (
     <nav
@@ -51,19 +50,26 @@ export function MembershipNavbar() {
           <Link href="/about" className="nav-link">
             About
           </Link>
-          <Link href="/#objectives" className="nav-link">
-            Objectives
-          </Link>
           <Link href="/about#programs" className="nav-link">
             Programs
           </Link>
-          <a href="#membership" className="nav-link">
+          <Link href="/#officers" className="nav-link">
+            Officers
+          </Link>
+          <Link href="/#gallery" className="nav-link">
+            Gallery
+          </Link>
+          <Link href="/#faq" className="nav-link">
+            FAQ
+          </Link>
+          <Link href="/membership" className="nav-link">
             Membership
-          </a>
+          </Link>
         </div>
-        <a href="#apply" className="btn btn-cta nav-cta">
-          <UserPlusIcon /> Apply Now
-        </a>
+        <Link href="/membership" className="btn btn-cta nav-cta">
+          <UserPlusIcon />
+          Become a Member
+        </Link>
 
         <button
           ref={menuButtonRef}
@@ -74,7 +80,7 @@ export function MembershipNavbar() {
           }
           aria-expanded={isMenuOpen}
           aria-haspopup="menu"
-          aria-controls="membership-mobile-menu"
+          aria-controls="home-mobile-menu"
           onClick={() => setIsMenuOpen((prev) => !prev)}
         >
           <span className="nav-toggle-icon" aria-hidden="true">
@@ -86,7 +92,7 @@ export function MembershipNavbar() {
       </div>
 
       <div
-        id="membership-mobile-menu"
+        id="home-mobile-menu"
         className={`nav-mobile-panel ${isMenuOpen ? "open" : ""}`}
         role="region"
         aria-label="Mobile navigation"
@@ -98,32 +104,46 @@ export function MembershipNavbar() {
             About
           </Link>
           <Link
-            href="/#objectives"
-            className="nav-mobile-link"
-            onClick={closeMenu}
-          >
-            Objectives
-          </Link>
-          <Link
             href="/about#programs"
             className="nav-mobile-link"
             onClick={closeMenu}
           >
             Programs
           </Link>
-          <a href="#membership" className="nav-mobile-link" onClick={closeMenu}>
+          <Link
+            href="/#officers"
+            className="nav-mobile-link"
+            onClick={closeMenu}
+          >
+            Officers
+          </Link>
+          <Link
+            href="/#gallery"
+            className="nav-mobile-link"
+            onClick={closeMenu}
+          >
+            Gallery
+          </Link>
+          <Link href="/#faq" className="nav-mobile-link" onClick={closeMenu}>
+            FAQ
+          </Link>
+          <Link
+            href="/membership"
+            className="nav-mobile-link"
+            onClick={closeMenu}
+          >
             Membership
-          </a>
-          <a
-            href="#apply"
+          </Link>
+          <Link
+            href="/membership"
             className="btn btn-cta nav-mobile-cta"
             onClick={closeMenu}
           >
             <UserPlusIcon />
-            Apply Now
-          </a>
+            Become a Member
+          </Link>
         </div>
       </div>
     </nav>
-  );
+  )
 }

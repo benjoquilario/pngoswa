@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
 import {
   AboutSection,
@@ -9,10 +9,11 @@ import {
   HomeNavbar,
   JoinCtaSection,
   ObjectivesSection,
-} from "@/components/home";
+  OfficersSection,
+} from "@/components/home"
 
 const homeOgImage =
-  "/api/og?title=PNGOSWA&description=Support%20for%20NGO%20social%20workers%20in%20the%20Philippines";
+  "/api/og?title=PNGOSWA&description=Support%20for%20NGO%20social%20workers%20in%20the%20Philippines"
 
 export const metadata: Metadata = {
   title: "PNGOSWA Home",
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
       "PNGOSWA supports NGO social workers in the Philippines through advocacy, programs, and professional development.",
     images: [homeOgImage],
   },
-};
+}
 
 export default function Home() {
   return (
@@ -53,6 +54,7 @@ export default function Home() {
       <main className="flex-1" id="top">
         <HeroSection />
         <AboutSection />
+        <OfficersSection />
         <ObjectivesSection />
         <GallerySection />
         <FaqSection />
@@ -61,5 +63,5 @@ export default function Home() {
 
       <HomeFooter />
     </>
-  );
+  )
 }

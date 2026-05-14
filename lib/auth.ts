@@ -8,7 +8,11 @@ import {
   isDatabaseConnectionError,
   prisma,
 } from "@/lib/db"
-import { createEmailPreview, sendTransactionalEmail } from "@/lib/email"
+import {
+  createEmailPreview,
+  createMagicLinkEmail,
+  sendTransactionalEmail,
+} from "@/lib/email"
 
 type PortalScope = "ADMIN" | "MEMBER"
 
@@ -85,43 +89,6 @@ export function isDevelopmentAuthBypassEnabled() {
     process.env.DEV_AUTH_BYPASS === "true" ||
     process.env.NODE_ENV !== "production"
   )
-}
-
-function createMagicLinkEmail(params: {
-  recipientName?: string
-  link: string
-  scope: PortalScope
-}) {
-  const greeting = params.recipientName
-    ? `Hello ${params.recipientName},`
-    : "Hello,"
-  const portalLabel =
-    params.scope === "ADMIN" ? "admin dashboard" : "member profile"
-  const subject =
-    params.scope === "ADMIN"
-      ? "Your PNGOSWA admin access link"
-      : "Your PNGOSWA member access link"
-  const text = `${greeting}
-
-Use the secure link below to open your PNGOSWA ${portalLabel}:
-${params.link}
-
-This link will expire in ${MAGIC_LINK_TTL_MINUTES} minutes. If you did not request this email, you can ignore it.`
-  const html = `
-    <div style="font-family: Georgia, serif; line-height: 1.7; color: #183153;">
-      <p>${greeting}</p>
-      <p>Use the secure button below to open your PNGOSWA ${portalLabel}.</p>
-      <p style="margin: 24px 0;">
-        <a href="${params.link}" style="display: inline-block; padding: 12px 18px; border-radius: 12px; background: #c41e3a; color: #ffffff; text-decoration: none; font-weight: 700;">
-          Open ${params.scope === "ADMIN" ? "Admin Dashboard" : "Member Profile"}
-        </a>
-      </p>
-      <p style="font-size: 14px; color: #51627f;">This link expires in ${MAGIC_LINK_TTL_MINUTES} minutes.</p>
-      <p style="font-size: 14px; color: #51627f;">If you did not request this email, you can safely ignore it.</p>
-    </div>
-  `
-
-  return { subject, text, html }
 }
 
 async function resolvePortalUser(
@@ -240,6 +207,7 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
       recipientName: input.recipientName ?? user.name ?? undefined,
       link,
       scope: input.scope,
+      expiresInMinutes: MAGIC_LINK_TTL_MINUTES,
     })
     const emailResult = await sendTransactionalEmail({
       to: email,
@@ -248,31 +216,42 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
       text: emailContent.text,
     })
 
-    await prisma.magicLinkToken.create({
-      data: {
-        email,
-        tokenHash,
-        scope: input.scope,
-        redirectPath: config.redirectPath,
-        expiresAt,
-        userId: user.id,
-        applicationId: input.applicationId ?? resolved.applicationId,
-      },
-    })
-
-    await prisma.communicationLog.create({
-      data: {
-        applicationId: input.applicationId ?? resolved.applicationId,
-        userId: user.id,
-        kind: "MAGIC_LINK",
-        status: emailResult.ok ? "SENT" : "FAILED",
-        recipientEmail: email,
-        subject: emailContent.subject,
-        previewText: createEmailPreview(emailContent.text),
-        errorMessage: emailResult.ok ? null : emailResult.error,
-        sentAt: emailResult.ok ? new Date() : null,
-      },
-    })
+    await prisma.$transaction([
+      prisma.magicLinkToken.updateMany({
+        where: {
+          email,
+          scope: input.scope,
+          usedAt: null,
+        },
+        data: {
+          usedAt: new Date(),
+        },
+      }),
+      prisma.magicLinkToken.create({
+        data: {
+          email,
+          tokenHash,
+          scope: input.scope,
+          redirectPath: config.redirectPath,
+          expiresAt,
+          userId: user.id,
+          applicationId: input.applicationId ?? resolved.applicationId,
+        },
+      }),
+      prisma.communicationLog.create({
+        data: {
+          applicationId: input.applicationId ?? resolved.applicationId,
+          userId: user.id,
+          kind: "MAGIC_LINK",
+          status: emailResult.ok ? "SENT" : "FAILED",
+          recipientEmail: email,
+          subject: emailContent.subject,
+          previewText: createEmailPreview(emailContent.text),
+          errorMessage: emailResult.ok ? null : emailResult.error,
+          sentAt: emailResult.ok ? new Date() : null,
+        },
+      }),
+    ])
 
     return {
       ok: true as const,
@@ -334,39 +313,50 @@ export async function signInForDevelopment(
 }
 
 export async function consumeMagicLink(rawToken: string, scope: PortalScope) {
-  const tokenHash = hashToken(rawToken)
-  const magicLink = await prisma.magicLinkToken.findFirst({
-    where: {
-      tokenHash,
-      scope,
-      usedAt: null,
-      expiresAt: {
-        gt: new Date(),
+  try {
+    const tokenHash = hashToken(rawToken)
+    const magicLink = await prisma.magicLinkToken.findFirst({
+      where: {
+        tokenHash,
+        scope,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
       },
-    },
-    include: {
-      user: true,
-    },
-  })
-
-  if (!magicLink || !magicLink.user) {
-    return null
-  }
-  const session = await createPortalSessionRecord(scope, magicLink.user.id)
-
-  await prisma.$transaction([
-    prisma.magicLinkToken.update({
-      where: { id: magicLink.id },
-      data: {
-        usedAt: new Date(),
+      orderBy: {
+        createdAt: "desc",
       },
-    }),
-  ])
+      include: {
+        user: true,
+      },
+    })
 
-  return {
-    redirectPath: magicLink.redirectPath,
-    rawSessionToken: session.rawSessionToken,
-    expiresAt: session.expiresAt,
+    if (!magicLink || !magicLink.user) {
+      return null
+    }
+    const session = await createPortalSessionRecord(scope, magicLink.user.id)
+
+    await prisma.$transaction([
+      prisma.magicLinkToken.update({
+        where: { id: magicLink.id },
+        data: {
+          usedAt: new Date(),
+        },
+      }),
+    ])
+
+    return {
+      redirectPath: magicLink.redirectPath,
+      rawSessionToken: session.rawSessionToken,
+      expiresAt: session.expiresAt,
+    }
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return null
+    }
+
+    throw error
   }
 }
 

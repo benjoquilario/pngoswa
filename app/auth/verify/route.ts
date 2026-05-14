@@ -1,4 +1,5 @@
 import { consumeMagicLink, setPortalSessionCookie } from "@/lib/auth"
+import { isDatabaseConnectionError } from "@/lib/db"
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -10,7 +11,24 @@ export async function GET(request: Request) {
     return Response.redirect(new URL("/", request.url))
   }
 
-  const session = await consumeMagicLink(rawToken, scope)
+  let session
+
+  try {
+    session = await consumeMagicLink(rawToken, scope)
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return Response.redirect(
+        new URL(
+          scope === "ADMIN"
+            ? "/admin/login?invalid=1"
+            : "/member/login?invalid=1",
+          request.url
+        )
+      )
+    }
+
+    throw error
+  }
 
   if (!session) {
     return Response.redirect(

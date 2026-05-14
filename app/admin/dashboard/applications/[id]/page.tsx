@@ -165,6 +165,9 @@ export default async function ApplicationDetailPage({
               <label className="form-label" htmlFor="subject">
                 Email subject
               </label>
+              <div className="form-hint">
+                Leave blank to use the default PNGOSWA email subject for this action.
+              </div>
               <input
                 id="subject"
                 name="subject"
@@ -177,6 +180,9 @@ export default async function ApplicationDetailPage({
               <label className="form-label" htmlFor="message">
                 Reviewer message
               </label>
+              <div className="form-hint">
+                Optional for accept and reject. For follow-up, your note will be included in the email.
+              </div>
               <textarea
                 id="message"
                 name="message"

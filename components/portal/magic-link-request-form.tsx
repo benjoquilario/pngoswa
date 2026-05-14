@@ -14,6 +14,7 @@ type MagicLinkRequestFormProps = {
     formData: FormData
   ) => Promise<MagicLinkFormState>
   description: string
+  initialError?: string
   pendingLabel: string
   submitLabel: string
 }
@@ -23,6 +24,7 @@ const initialState: MagicLinkFormState = {}
 export function MagicLinkRequestForm({
   action,
   description,
+  initialError,
   pendingLabel,
   submitLabel,
 }: MagicLinkRequestFormProps) {
@@ -42,9 +44,9 @@ export function MagicLinkRequestForm({
         className="form-input"
         placeholder="you@email.com"
       />
-      {state.error ? (
+      {state.error || initialError ? (
         <div className="form-feedback form-feedback-error">
-          <p>{state.error}</p>
+          <p>{state.error ?? initialError}</p>
         </div>
       ) : null}
       {state.success ? (
@@ -52,12 +54,17 @@ export function MagicLinkRequestForm({
           <p>{state.success}</p>
           {state.debugUrl ? (
             <p>
-              Development access link: <a href={state.debugUrl}>{state.debugUrl}</a>
+              Development access link:{" "}
+              <a href={state.debugUrl}>{state.debugUrl}</a>
             </p>
           ) : null}
         </div>
       ) : null}
-      <button type="submit" className="btn btn-cta btn-lg submit-btn" disabled={pending}>
+      <button
+        type="submit"
+        className="btn btn-cta btn-lg submit-btn"
+        disabled={pending}
+      >
         {pending ? pendingLabel : submitLabel}
       </button>
     </form>

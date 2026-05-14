@@ -4,7 +4,12 @@ import { requestAdminMagicLink } from "@/app/admin/actions"
 import { MagicLinkRequestForm } from "@/components/portal/magic-link-request-form"
 import { getCurrentPortalSession, isDevelopmentAuthBypassEnabled } from "@/lib/auth"
 
-export default async function AdminLoginPage() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invalid?: string }>
+}) {
+  const params = await searchParams
   const session = await getCurrentPortalSession("ADMIN")
   const isDevBypass = isDevelopmentAuthBypassEnabled()
 
@@ -23,6 +28,11 @@ export default async function AdminLoginPage() {
             isDevBypass
               ? "Use an admin email that has already been synced into the database. In development, approved admin accounts are signed in directly and redirected to the dashboard without email delivery."
               : "Use an admin email that has already been synced into the database to receive a secure access link for the PNGOSWA membership review dashboard."
+          }
+          initialError={
+            params.invalid === "1"
+              ? "That admin sign-in link is invalid, expired, or has already been used. Request a new access link below."
+              : undefined
           }
           pendingLabel={
             isDevBypass ? "Signing in..." : "Sending admin access link..."

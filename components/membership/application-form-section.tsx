@@ -287,7 +287,7 @@ export function ApplicationFormSection() {
               <Field
                 htmlFor="prcLicense"
                 label="PRC License Number"
-                hint="If applicable"
+                // hint="If applicable"
                 error={errors.prcLicense?.message}
               >
                 <Input

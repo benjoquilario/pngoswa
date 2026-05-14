@@ -11,7 +11,12 @@ import {
   signInForDevelopment,
 } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { createEmailPreview, sendTransactionalEmail } from "@/lib/email"
+import {
+  createEmailPreview,
+  createMembershipReviewEmail,
+  getDefaultMemberPortalUrl,
+  sendTransactionalEmail,
+} from "@/lib/email"
 
 import type { MagicLinkFormState } from "@/components/portal/magic-link-request-form"
 
@@ -95,11 +100,11 @@ export async function reviewMembershipAction(formData: FormData) {
         lastFollowUpSentAt: Date
       }
   let reviewType: "FOLLOW_UP" | "APPROVED" | "REJECTED"
-  let emailSubject = subject
-  let emailBody = message
+  let emailKind: "approve" | "follow-up" | "reject"
   let communicationKind: "FOLLOW_UP" | "STATUS_UPDATE"
 
   if (action === "approve") {
+    emailKind = "approve"
     reviewType = "APPROVED"
     communicationKind = "STATUS_UPDATE"
     updates = {
@@ -108,15 +113,8 @@ export async function reviewMembershipAction(formData: FormData) {
       rejectedAt: null,
       followUpMessage: null,
     }
-    emailSubject ||= "Your PNGOSWA membership has been approved"
-    emailBody ||= `Hello ${application.firstName},
-
-Your PNGOSWA membership application (${application.applicationNumber}) has been approved.
-
-You can use your member portal to review your current status anytime.
-
-Welcome to PNGOSWA.`
   } else if (action === "reject") {
+    emailKind = "reject"
     reviewType = "REJECTED"
     communicationKind = "STATUS_UPDATE"
     updates = {
@@ -124,13 +122,8 @@ Welcome to PNGOSWA.`
       rejectedAt: new Date(),
       approvedAt: null,
     }
-    emailSubject ||= "Update on your PNGOSWA membership application"
-    emailBody ||= `Hello ${application.firstName},
-
-Your PNGOSWA membership application (${application.applicationNumber}) was not approved at this time.
-
-Please contact PNGOSWA if you need clarification on the decision.`
   } else {
+    emailKind = "follow-up"
     reviewType = "FOLLOW_UP"
     communicationKind = "FOLLOW_UP"
     updates = {
@@ -138,29 +131,25 @@ Please contact PNGOSWA if you need clarification on the decision.`
       followUpMessage: message,
       lastFollowUpSentAt: new Date(),
     }
-    emailSubject ||= "Additional information needed for your PNGOSWA application"
-    emailBody ||= `Hello ${application.firstName},
-
-PNGOSWA reviewed your membership application (${application.applicationNumber}) and needs additional information before we can proceed.
-
-Please review the member portal and reply with the requested documents or clarifications.`
   }
 
-  const emailHtml = `
-    <div style="font-family: Georgia, serif; line-height: 1.7; color: #183153;">
-      <p>Hello ${application.firstName},</p>
-      ${emailBody
-        .split("\n\n")
-        .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br />")}</p>`)
-        .join("")}
-    </div>
-  `
+  const defaultEmail = createMembershipReviewEmail({
+    kind: emailKind,
+    memberName: application.firstName,
+    applicationNumber: application.applicationNumber,
+    memberPortalUrl: getDefaultMemberPortalUrl(),
+    reviewerMessage: message,
+  })
+
+  const emailSubject = subject || defaultEmail.subject
+  const emailText = defaultEmail.text
+  const emailHtml = defaultEmail.html
 
   const emailResult = await sendTransactionalEmail({
     to: application.email,
     subject: emailSubject,
     html: emailHtml,
-    text: emailBody,
+    text: emailText,
   })
 
   await prisma.$transaction([
@@ -185,7 +174,7 @@ Please review the member portal and reply with the requested documents or clarif
         status: emailResult.ok ? "SENT" : "FAILED",
         recipientEmail: application.email,
         subject: emailSubject,
-        previewText: createEmailPreview(emailBody),
+        previewText: createEmailPreview(emailText),
         errorMessage: emailResult.ok ? null : emailResult.error,
         sentAt: emailResult.ok ? new Date() : null,
       },

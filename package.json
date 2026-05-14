@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
     "admins:sync": "node --experimental-strip-types --experimental-specifier-resolution=node --import dotenv/config ./scripts/sync-admins.ts"
   },
   "dependencies": {

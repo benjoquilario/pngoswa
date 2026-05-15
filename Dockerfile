@@ -82,14 +82,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy production assets
 COPY --from=builder --chown=node:node /app/public ./public
-COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 COPY --from=builder --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=node:node /app/docker ./docker
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown node:node .next
+RUN mkdir .next && chown node:node .next
 RUN chmod +x ./docker/start.sh
 
 # Automatically leverage output traces to reduce image size

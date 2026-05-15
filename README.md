@@ -16,6 +16,8 @@ DATABASE_URL="paste-your-prisma-postgres-connection-string-here"
 NEXT_PUBLIC_SITE_URL="https://www.pngoswa.org"
 RUN_DB_MIGRATIONS="true"
 RESEND_API_KEY=""
+RESEND_FROM_EMAIL="PNGOSWA <info@pngoswa.org>"
+RESEND_REPLY_TO_EMAIL="info@pngoswa.org"
 UPLOADTHING_TOKEN=""
 ```
 
@@ -61,11 +63,12 @@ For fully automatic VPS deploys on push:
 1. Connect this repository to Dokploy.
 2. Use the included `Dockerfile`.
 3. Enable Dokploy auto-deploy or webhook deploys for your branch.
-4. Set the required environment variables in Dokploy, especially `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `RUN_DB_MIGRATIONS`, `RESEND_API_KEY`, and `UPLOADTHING_TOKEN`.
+4. Set the required environment variables in Dokploy, especially `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `RUN_DB_MIGRATIONS`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_REPLY_TO_EMAIL`, and `UPLOADTHING_TOKEN`.
 
 With that setup, each push can trigger a fresh Docker build in Dokploy, and the new container will apply Prisma migrations before starting.
 
 For production, set `NEXT_PUBLIC_SITE_URL` to `https://www.pngoswa.org`.
+For Resend, set `RESEND_FROM_EMAIL` to an address on your verified sending domain. Do not use a Gmail or other public mailbox as the sender.
 
 ## Getting Started
 

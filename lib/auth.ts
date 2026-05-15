@@ -247,16 +247,21 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
       }),
     ])
 
+    if (!emailResult.ok) {
+      return {
+        ok: false as const,
+        message:
+          process.env.NODE_ENV === "production"
+            ? "We couldn't send your sign-in email right now. Please contact support or try again after the email sender configuration is fixed."
+            : `We couldn't send your sign-in email: ${emailResult.error}`,
+      }
+    }
+
     return {
       ok: true as const,
-      emailSent: emailResult.ok,
-      message: emailResult.ok
-        ? "A secure sign-in link has been sent to your email."
-        : "Your access link was created, but email delivery is not configured yet.",
-      debugUrl:
-        !emailResult.ok && process.env.NODE_ENV !== "production"
-          ? link
-          : undefined,
+      emailSent: true,
+      message: "A secure sign-in link has been sent to your email.",
+      debugUrl: undefined,
     }
   } catch (error) {
     if (isDatabaseConnectionError(error)) {

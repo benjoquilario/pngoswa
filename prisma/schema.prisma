@@ -103,6 +103,7 @@ model User {
 model MembershipApplication {
   id                     String                   @id @default(cuid())
   applicationNumber      String                   @unique
+  submissionFingerprint  String?                  @unique
   userId                 String
   user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   status                 MembershipStatus         @default(PENDING)

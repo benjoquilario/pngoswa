@@ -22,6 +22,17 @@ export type TransactionalEmailResult =
   | { ok: true }
   | { ok: false; error: string }
 
+const PUBLIC_EMAIL_PROVIDERS = [
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "icloud.com",
+  "aol.com",
+]
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -49,13 +60,50 @@ function paragraphizeHtml(content: string) {
 }
 
 function getDefaultFromEmail() {
-  return (
-    process.env.RESEND_FROM_EMAIL ?? "PNGOSWA <philngosocialworker@gmail.com>"
-  )
+  return process.env.RESEND_FROM_EMAIL ?? "PNGOSWA <info@pngoswa.org>"
 }
 
 function getReplyToEmail() {
-  return process.env.RESEND_REPLY_TO_EMAIL ?? "philngosocialworker@gmail.com"
+  return process.env.RESEND_REPLY_TO_EMAIL ?? "info@pngoswa.org"
+}
+
+function extractEmailAddress(value: string) {
+  const match = value.match(/<([^>]+)>/)
+
+  return (match?.[1] ?? value).trim().toLowerCase()
+}
+
+function getEmailDomain(value: string) {
+  const email = extractEmailAddress(value)
+  const [, domain = ""] = email.split("@")
+
+  return domain
+}
+
+function validateResendSenderConfig() {
+  const from = getDefaultFromEmail()
+  const fromDomain = getEmailDomain(from)
+  const isPublicProvider = PUBLIC_EMAIL_PROVIDERS.includes(fromDomain)
+
+  if (!process.env.RESEND_FROM_EMAIL && process.env.NODE_ENV === "production") {
+    return {
+      ok: false as const,
+      error:
+        "RESEND_FROM_EMAIL is not set. Configure it with an address on your verified Resend domain, for example PNGOSWA <info@pngoswa.org>.",
+    }
+  }
+
+  if (isPublicProvider) {
+    return {
+      ok: false as const,
+      error: `RESEND_FROM_EMAIL must use your verified sending domain, not ${fromDomain}.`,
+    }
+  }
+
+  return {
+    ok: true as const,
+    from,
+  }
 }
 
 function getMemberPortalUrl() {
@@ -314,7 +362,6 @@ export async function sendTransactionalEmail(
   input: TransactionalEmailInput
 ): Promise<TransactionalEmailResult> {
   const apiKey = process.env.RESEND_API_KEY
-  const from = getDefaultFromEmail()
   const replyTo = getReplyToEmail()
 
   if (!apiKey) {
@@ -324,11 +371,20 @@ export async function sendTransactionalEmail(
     }
   }
 
+  const senderConfig = validateResendSenderConfig()
+
+  if (!senderConfig.ok) {
+    return senderConfig
+  }
+
+  const from = senderConfig.from
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "User-Agent": "pngoswa/1.0",
     },
     body: JSON.stringify({
       from,
@@ -342,6 +398,13 @@ export async function sendTransactionalEmail(
 
   if (!response.ok) {
     const errorBody = await response.text()
+
+    console.error("Failed to send transactional email with Resend.", {
+      status: response.status,
+      from,
+      to: input.to,
+      errorBody,
+    })
 
     return {
       ok: false,

@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 
 import { requestMagicLink } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Prisma } from "@/lib/generated/prisma/client"
 import type {
   MembershipApplicationFormValues,
   MembershipUploadedFile,
@@ -140,6 +141,11 @@ type MembershipDocumentTypeValue =
 type StoredMembershipDocument = StoredUpload & {
   type: MembershipDocumentTypeValue
   label: string
+}
+
+type ExistingSubmissionResult = {
+  applicationId: string
+  applicationNumber: string
 }
 
 function readString(formData: FormData, fieldName: string) {
@@ -820,6 +826,92 @@ function buildApplicationNumber() {
   return `PNGOSWA-${year}-${randomUUID().slice(0, 8).toUpperCase()}`
 }
 
+function buildSubmissionFingerprint(parsed: Extract<ParsedMembershipApplication, { ok: true }>) {
+  const documentSignature =
+    parsed.source === "uploadthing"
+      ? [
+          parsed.documents.resumeUpload.key,
+          parsed.documents.employmentProofUpload?.key ?? "",
+          parsed.documents.prcLicenseUpload?.key ?? "",
+          parsed.documents.endorsementUpload?.key ?? "",
+          parsed.documents.certificateUpload?.key ?? "",
+          parsed.documents.paymentProof.key,
+          parsed.documents.photoUpload.key,
+        ]
+      : [
+          `${parsed.documents.resumeUpload.name}:${parsed.documents.resumeUpload.size}`,
+          parsed.documents.employmentProofUpload
+            ? `${parsed.documents.employmentProofUpload.name}:${parsed.documents.employmentProofUpload.size}`
+            : "",
+          parsed.documents.prcLicenseUpload
+            ? `${parsed.documents.prcLicenseUpload.name}:${parsed.documents.prcLicenseUpload.size}`
+            : "",
+          parsed.documents.endorsementUpload
+            ? `${parsed.documents.endorsementUpload.name}:${parsed.documents.endorsementUpload.size}`
+            : "",
+          parsed.documents.certificateUpload
+            ? `${parsed.documents.certificateUpload.name}:${parsed.documents.certificateUpload.size}`
+            : "",
+          `${parsed.documents.paymentProof.name}:${parsed.documents.paymentProof.size}`,
+          `${parsed.documents.photoUpload.name}:${parsed.documents.photoUpload.size}`,
+        ]
+
+  const payload = JSON.stringify({
+    email: parsed.values.email,
+    membershipType: parsed.values.membershipType,
+    dateOfBirth: parsed.values.dateOfBirth.toISOString(),
+    dateOfRegistration: parsed.values.dateOfRegistration.toISOString(),
+    organization: parsed.values.organization,
+    documents: documentSignature,
+  })
+
+  return createHash("sha256").update(payload).digest("hex")
+}
+
+function isSubmissionFingerprintConflict(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002" &&
+    Array.isArray(error.meta?.target) &&
+    error.meta.target.includes("submissionFingerprint")
+  )
+}
+
+async function findExistingSubmission(
+  submissionFingerprint: string
+): Promise<ExistingSubmissionResult | null> {
+  const existing = await prisma.membershipApplication.findUnique({
+    where: {
+      submissionFingerprint,
+    },
+    select: {
+      id: true,
+      applicationNumber: true,
+    },
+  })
+
+  if (!existing) {
+    return null
+  }
+
+  return {
+    applicationId: existing.id,
+    applicationNumber: existing.applicationNumber,
+  }
+}
+
+function buildExistingSubmissionResponse(existing: ExistingSubmissionResult) {
+  return {
+    ok: true as const,
+    applicationId: existing.applicationId,
+    applicationNumber: existing.applicationNumber,
+    emailSent: false,
+    debugUrl: undefined,
+    message:
+      "We already received this membership application. We did not create another copy.",
+  }
+}
+
 function getFullName(values: {
   firstName: string
   middleName?: string
@@ -956,6 +1048,13 @@ export async function createMembershipApplication(input: FormData | unknown) {
       status: 400,
       errors: parsed.errors,
     }
+  }
+
+  const submissionFingerprint = buildSubmissionFingerprint(parsed)
+  const existingSubmission = await findExistingSubmission(submissionFingerprint)
+
+  if (existingSubmission) {
+    return buildExistingSubmissionResponse(existingSubmission)
   }
 
   const applicationId = randomUUID()
@@ -1113,6 +1212,7 @@ export async function createMembershipApplication(input: FormData | unknown) {
       data: {
         id: applicationId,
         applicationNumber,
+        submissionFingerprint,
         userId: user.id,
         status: "PENDING",
         ...parsed.values,
@@ -1130,6 +1230,20 @@ export async function createMembershipApplication(input: FormData | unknown) {
       },
     })
   } catch (error) {
+    if (isSubmissionFingerprintConflict(error)) {
+      if (parsed.source === "legacy") {
+        await removeApplicationStorage(applicationId)
+      }
+
+      const concurrentSubmission = await findExistingSubmission(
+        submissionFingerprint
+      )
+
+      if (concurrentSubmission) {
+        return buildExistingSubmissionResponse(concurrentSubmission)
+      }
+    }
+
     if (parsed.source === "legacy") {
       await removeApplicationStorage(applicationId)
     } else {
@@ -1156,6 +1270,17 @@ export async function createMembershipApplication(input: FormData | unknown) {
     scope: "MEMBER",
     userId: user.id,
   })
+
+  if (!magicLinkResult.ok) {
+    return {
+      ok: true as const,
+      applicationId,
+      applicationNumber,
+      emailSent: false,
+      debugUrl: undefined,
+      message: `Your application was saved, but we couldn't send the member sign-in email yet. ${magicLinkResult.message}`,
+    }
+  }
 
   return {
     ok: true as const,

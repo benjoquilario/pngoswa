@@ -45,26 +45,6 @@ export function GallerySection() {
   }, [])
 
   useEffect(() => {
-    const warmInitialImages = () => {
-      galleryImages.slice(0, 4).forEach((image) => preloadImage(image.src))
-    }
-
-    if (typeof window === "undefined") {
-      return
-    }
-
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(warmInitialImages)
-
-      return () => window.cancelIdleCallback(idleId)
-    }
-
-    const timeoutId = window.setTimeout(warmInitialImages, 250)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [preloadImage])
-
-  useEffect(() => {
     if (activeIndex === null) {
       return
     }

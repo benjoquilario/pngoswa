@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import {
   Controller,
@@ -56,6 +56,7 @@ export function ApplicationFormSection() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] =
     useState<MembershipApplicationSuccess | null>(null)
+  const submitLockRef = useRef(false)
 
   const {
     control,
@@ -77,6 +78,11 @@ export function ApplicationFormSection() {
   const validationMessages = collectErrorMessages(errors)
 
   const onSubmit = handleSubmit(async (values) => {
+    if (submitLockRef.current) {
+      return
+    }
+
+    submitLockRef.current = true
     setSubmitError(null)
     setSubmitSuccess(null)
 
@@ -123,6 +129,8 @@ export function ApplicationFormSection() {
       setSubmitError(
         "Your application could not be sent right now. Please check your connection and try again."
       )
+    } finally {
+      submitLockRef.current = false
     }
   })
 

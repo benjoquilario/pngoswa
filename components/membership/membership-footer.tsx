@@ -54,6 +54,9 @@ export function MembershipFooter() {
                 <Link href="/#about">About Us</Link>
               </li>
               <li>
+                <Link href="/ethics">Code of Ethics</Link>
+              </li>
+              <li>
                 <Link href="/#objectives">Objectives</Link>
               </li>
               <li>
@@ -69,6 +72,9 @@ export function MembershipFooter() {
             <ul className="footer-links">
               <li>
                 <a href="mailto:info@pngoswa.org">info@pngoswa.org</a>
+              </li>
+              <li>
+                <Link href="/ethics">Ethics & Policies</Link>
               </li>
               <li>
                 <a href="#apply">Apply for Membership</a>

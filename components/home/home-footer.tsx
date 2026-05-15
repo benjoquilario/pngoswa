@@ -55,6 +55,9 @@ export function HomeFooter() {
                 <Link href="/about">About Us</Link>
               </li>
               <li>
+                <Link href="/ethics">Code of Ethics</Link>
+              </li>
+              <li>
                 <Link href="/#objectives">Objectives</Link>
               </li>
               <li>
@@ -93,6 +96,9 @@ export function HomeFooter() {
               </li>
               <li>
                 <Link href="/membership">Membership Inquiry</Link>
+              </li>
+              <li>
+                <Link href="/ethics">Ethics & Policies</Link>
               </li>
               <li>
                 <Link href="/#faq">Membership FAQ</Link>

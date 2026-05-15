@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { JsonLd } from "@/components/seo/json-ld"
 import {
   FoundationSection,
   HomeFooter,
@@ -12,19 +13,26 @@ import {
   objectives,
   scopeCoverage,
 } from "@/components/home/data"
+import {
+  createBreadcrumbJsonLd,
+  ORGANIZATION_NAME,
+  ORGANIZATION_SHORT_NAME,
+} from "@/lib/seo"
+import { getSiteUrl } from "@/lib/site-url"
 
 const aboutOgImage =
   "/api/og?title=About%20PNGOSWA&description=Philippine%20NGO%20Social%20Workers%20Association"
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
-  title: "About Philippine NGO Social Workers Association",
+  title: `About ${ORGANIZATION_SHORT_NAME}`,
   description:
-    "Learn about PNGOSWA, the Philippine NGO Social Workers Association, including our foundation, programs, and mission for NGO social workers in the Philippines.",
+    `Learn about ${ORGANIZATION_SHORT_NAME}, the ${ORGANIZATION_NAME}, including our foundation, programs, mission, and advocacy for NGO social workers in the Philippines.`,
   keywords: [
     "About PNGOSWA",
-    "Philippine NGO Social Workers Association",
-    "Philippine NGO",
-    "Ph NGO",
+    ORGANIZATION_NAME,
+    "PNGOSWA programs",
+    "PNGOSWA mission",
   ],
   alternates: {
     canonical: "/about",
@@ -45,10 +53,41 @@ export const metadata: Metadata = {
   },
 }
 
+const aboutStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "AboutPage",
+      "@id": `${siteUrl}/about#webpage`,
+      url: `${siteUrl}/about`,
+      name: `About ${ORGANIZATION_SHORT_NAME}`,
+      description:
+        `About ${ORGANIZATION_SHORT_NAME}, the ${ORGANIZATION_NAME}, and our programs for NGO social workers in the Philippines.`,
+      isPartOf: {
+        "@id": `${siteUrl}#website`,
+      },
+      about: {
+        "@id": `${siteUrl}#organization`,
+      },
+      breadcrumb: {
+        "@id": `${siteUrl}/about#breadcrumb`,
+      },
+    },
+    {
+      ...createBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "About", path: "/about" },
+      ]),
+      "@id": `${siteUrl}/about#breadcrumb`,
+    },
+  ],
+}
+
 export default function AboutPage() {
   return (
     <>
       <HomeNavbar />
+      <JsonLd data={aboutStructuredData} />
 
       <main className="flex-1" id="top">
         <section className="page-header">

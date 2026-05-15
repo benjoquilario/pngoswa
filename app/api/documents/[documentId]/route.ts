@@ -4,6 +4,10 @@ import { readStoredFile } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
 
+const noIndexHeaders = {
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ documentId: string }> }
@@ -15,7 +19,10 @@ export async function GET(
   ])
 
   if (!adminSession && !memberSession) {
-    return new Response("Unauthorized", { status: 401 })
+    return new Response("Unauthorized", {
+      status: 401,
+      headers: noIndexHeaders,
+    })
   }
 
   const document = await prisma.membershipDocument.findUnique({
@@ -28,7 +35,10 @@ export async function GET(
   })
 
   if (!document) {
-    return new Response("Document not found", { status: 404 })
+    return new Response("Document not found", {
+      status: 404,
+      headers: noIndexHeaders,
+    })
   }
 
   if (
@@ -36,11 +46,20 @@ export async function GET(
     memberSession &&
     document.application.userId !== memberSession.user.id
   ) {
-    return new Response("Forbidden", { status: 403 })
+    return new Response("Forbidden", {
+      status: 403,
+      headers: noIndexHeaders,
+    })
   }
 
   if (/^https?:\/\//.test(document.storagePath)) {
-    return Response.redirect(document.storagePath, 307)
+    return new Response(null, {
+      status: 307,
+      headers: {
+        Location: document.storagePath,
+        ...noIndexHeaders,
+      },
+    })
   }
 
   const fileBuffer = await readStoredFile(document.storagePath)
@@ -51,6 +70,7 @@ export async function GET(
       "Content-Disposition": `inline; filename="${document.originalName}"`,
       "Content-Type": document.mimeType,
       "Content-Length": String(document.sizeBytes),
+      ...noIndexHeaders,
     },
   })
 }

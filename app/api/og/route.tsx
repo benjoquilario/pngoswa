@@ -3,7 +3,8 @@ import { ImageResponse } from "next/og"
 export const runtime = "edge"
 
 const DEFAULT_TITLE = "PNGOSWA"
-const DEFAULT_DESCRIPTION = "Philippine NGO Social Workers Association"
+const DEFAULT_DESCRIPTION =
+  "Philippine NGO Social Workers Association in the Philippines"
 
 function sanitizeText(
   input: string | null,
@@ -208,7 +209,7 @@ export function GET(request: Request) {
             letterSpacing: "0.01em",
           }}
         >
-          pngoswa.org
+          www.pngoswa.org
         </div>
       </div>
     </div>,

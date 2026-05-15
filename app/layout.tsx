@@ -4,6 +4,14 @@ import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin"
 import { extractRouterConfig } from "uploadthing/server"
 
 import { uploadRouter } from "@/app/api/uploadthing/core"
+import { JsonLd } from "@/components/seo/json-ld"
+import {
+  createSiteNavigationJsonLd,
+  ORGANIZATION_DESCRIPTION,
+  ORGANIZATION_KEYWORDS,
+  ORGANIZATION_NAME,
+  ORGANIZATION_SHORT_NAME,
+} from "@/lib/seo"
 import { getSiteUrl } from "@/lib/site-url"
 
 import "./globals.css"
@@ -28,44 +36,56 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  applicationName: "PNGOSWA",
+  applicationName: ORGANIZATION_SHORT_NAME,
+  manifest: "/manifest.webmanifest",
   title: {
-    default: "PNGOSWA | Philippine NGO Social Workers Association",
-    template: "%s | PNGOSWA",
+    default: `${ORGANIZATION_SHORT_NAME} | ${ORGANIZATION_NAME}`,
+    template: `%s | ${ORGANIZATION_SHORT_NAME}`,
   },
-  description:
-    "PNGOSWA is the Philippine NGO Social Workers Association supporting NGO social workers in the Philippines through advocacy, programs, and professional development.",
-  keywords: [
-    "Pngosw",
-    "PNGOSWA",
-    "Ph NGO",
-    "Philippine NGO",
-    "Philippine NGO Social Workers Association",
-    "Social Workers",
-    "Association",
-    "NGO Philippines",
-    "Social Work",
-    "Professional Development",
-  ],
+  description: ORGANIZATION_DESCRIPTION,
+  keywords: ORGANIZATION_KEYWORDS,
   alternates: {
     canonical: "/",
   },
-  icons: { icon: "/logo.jpg" },
+  icons: {
+    icon: [
+      {
+        url: "/favicon_ico/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/favicon_ico/favicon-32x32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+      {
+        url: "/favicon_ico/favicon-16x16.png",
+        type: "image/png",
+        sizes: "16x16",
+      },
+    ],
+    shortcut: ["/favicon_ico/favicon.ico"],
+    apple: [
+      {
+        url: "/favicon_ico/apple-touch-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ],
+  },
   openGraph: {
-    title: "PNGOSWA | Philippine NGO Social Workers Association",
-    description:
-      "PNGOSWA is the Philippine NGO Social Workers Association supporting NGO social workers in the Philippines.",
+    title: `${ORGANIZATION_SHORT_NAME} | ${ORGANIZATION_NAME}`,
+    description: ORGANIZATION_DESCRIPTION,
     url: "/",
-    siteName: "PNGOSWA",
+    siteName: ORGANIZATION_SHORT_NAME,
     type: "website",
     locale: "en_PH",
     images: [defaultOgImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PNGOSWA | Philippine NGO Social Workers Association",
-    description:
-      "PNGOSWA supports NGO social workers in the Philippines through advocacy, programs, and membership development.",
+    title: `${ORGANIZATION_SHORT_NAME} | ${ORGANIZATION_NAME}`,
+    description: ORGANIZATION_DESCRIPTION,
     images: [defaultOgImage],
   },
   robots: {
@@ -87,30 +107,51 @@ const structuredData = {
     {
       "@type": "NonprofitOrganization",
       "@id": `${siteUrl}#organization`,
-      name: "Philippine NGO Social Workers Association",
-      alternateName: ["PNGOSWA", "Ph NGO Social Workers Association"],
+      name: ORGANIZATION_NAME,
+      alternateName: [ORGANIZATION_SHORT_NAME, "Ph NGO Social Workers Association"],
       url: siteUrl,
-      logo: `${siteUrl}/logo.jpg`,
+      description: ORGANIZATION_DESCRIPTION,
+      email: "info@pngoswa.org",
+      foundingDate: "2024",
+      areaServed: "Philippines",
+      knowsAbout: [
+        "NGO social work",
+        "professional development",
+        "social work advocacy",
+        "community engagement",
+      ],
+      keywords: ORGANIZATION_KEYWORDS.join(", "),
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/logo.jpg`,
+      },
     },
     {
       "@type": "WebSite",
       "@id": `${siteUrl}#website`,
       url: siteUrl,
-      name: "PNGOSWA",
+      name: ORGANIZATION_SHORT_NAME,
+      alternateName: ORGANIZATION_NAME,
+      description: ORGANIZATION_DESCRIPTION,
+      inLanguage: "en-PH",
       publisher: {
         "@id": `${siteUrl}#organization`,
       },
     },
     {
-      "@type": "SiteNavigationElement",
-      name: "About",
-      url: `${siteUrl}/about`,
+      "@type": "WebPage",
+      "@id": `${siteUrl}/#website-page`,
+      url: siteUrl,
+      name: `${ORGANIZATION_SHORT_NAME} | ${ORGANIZATION_NAME}`,
+      description: ORGANIZATION_DESCRIPTION,
+      isPartOf: {
+        "@id": `${siteUrl}#website`,
+      },
+      about: {
+        "@id": `${siteUrl}#organization`,
+      },
     },
-    {
-      "@type": "SiteNavigationElement",
-      name: "Membership",
-      url: `${siteUrl}/membership`,
-    },
+    ...createSiteNavigationJsonLd(),
   ],
 }
 
@@ -128,10 +169,7 @@ export default function RootLayout({
       <body className="flex min-h-dvh flex-col">
         <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
         {children}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
+        <JsonLd data={structuredData} />
       </body>
     </html>
   )

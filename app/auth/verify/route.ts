@@ -1,6 +1,20 @@
 import { consumeMagicLink, setPortalSessionCookie } from "@/lib/auth"
 import { isDatabaseConnectionError } from "@/lib/db"
 
+const noIndexHeaders = {
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
+}
+
+function redirectWithNoIndex(path: string, request: Request) {
+  return new Response(null, {
+    status: 307,
+    headers: {
+      Location: new URL(path, request.url).toString(),
+      ...noIndexHeaders,
+    },
+  })
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const rawToken = url.searchParams.get("token")
@@ -8,7 +22,7 @@ export async function GET(request: Request) {
   const scope = rawScope === "admin" ? "ADMIN" : rawScope === "member" ? "MEMBER" : null
 
   if (!rawToken || !scope) {
-    return Response.redirect(new URL("/", request.url))
+    return redirectWithNoIndex("/", request)
   }
 
   let session
@@ -17,13 +31,11 @@ export async function GET(request: Request) {
     session = await consumeMagicLink(rawToken, scope)
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
-      return Response.redirect(
-        new URL(
-          scope === "ADMIN"
-            ? "/admin/login?invalid=1"
-            : "/member/login?invalid=1",
-          request.url
-        )
+      return redirectWithNoIndex(
+        scope === "ADMIN"
+          ? "/admin/login?invalid=1"
+          : "/member/login?invalid=1",
+        request
       )
     }
 
@@ -31,12 +43,13 @@ export async function GET(request: Request) {
   }
 
   if (!session) {
-    return Response.redirect(
-      new URL(scope === "ADMIN" ? "/admin/login?invalid=1" : "/member/login?invalid=1", request.url)
+    return redirectWithNoIndex(
+      scope === "ADMIN" ? "/admin/login?invalid=1" : "/member/login?invalid=1",
+      request
     )
   }
 
   await setPortalSessionCookie(scope, session.rawSessionToken, session.expiresAt)
 
-  return Response.redirect(new URL(session.redirectPath, request.url))
+  return redirectWithNoIndex(session.redirectPath, request)
 }

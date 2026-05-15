@@ -1,5 +1,9 @@
 import { createMembershipApplication } from "@/lib/membership"
 
+const noIndexHeaders = {
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
+}
+
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get("content-type") ?? ""
@@ -14,18 +18,26 @@ export async function POST(request: Request) {
           ok: false,
           errors: result.errors,
         },
-        { status: result.status }
+        {
+          status: result.status,
+          headers: noIndexHeaders,
+        }
       )
     }
 
-    return Response.json({
-      ok: true,
-      applicationId: result.applicationId,
-      applicationNumber: result.applicationNumber,
-      emailSent: result.emailSent,
-      message: result.message,
-      debugUrl: result.debugUrl,
-    })
+    return Response.json(
+      {
+        ok: true,
+        applicationId: result.applicationId,
+        applicationNumber: result.applicationNumber,
+        emailSent: result.emailSent,
+        message: result.message,
+        debugUrl: result.debugUrl,
+      },
+      {
+        headers: noIndexHeaders,
+      }
+    )
   } catch (error) {
     console.error("Failed to save membership application:", error)
 
@@ -35,7 +47,10 @@ export async function POST(request: Request) {
         message:
           "We could not save your application right now. Please try again in a moment.",
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: noIndexHeaders,
+      }
     )
   }
 }

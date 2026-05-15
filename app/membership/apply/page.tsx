@@ -1,14 +1,22 @@
 import type { Metadata } from "next"
 
+import { JsonLd } from "@/components/seo/json-ld"
 import { MembershipApplyPageClient } from "@/components/membership/membership-apply-page-client"
+import {
+  createBreadcrumbJsonLd,
+  ORGANIZATION_NAME,
+  ORGANIZATION_SHORT_NAME,
+} from "@/lib/seo"
+import { getSiteUrl } from "@/lib/site-url"
 
 const membershipApplyOgImage =
   "/api/og?title=PNGOSWA%20Membership%20Application&description=Complete%20your%20PNGOSWA%20membership%20application%20form"
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
-  title: "Membership Application | Philippine NGO Social Workers Association",
+  title: `Apply for ${ORGANIZATION_SHORT_NAME} Membership`,
   description:
-    "Complete the PNGOSWA membership application form with your personal, employment, educational, professional, payment, and consent details.",
+    `Complete the online membership application form for ${ORGANIZATION_NAME}.`,
   alternates: {
     canonical: "/membership/apply",
   },
@@ -26,6 +34,41 @@ export const metadata: Metadata = {
   },
 }
 
+const membershipApplyStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": `${siteUrl}/membership/apply#webpage`,
+      url: `${siteUrl}/membership/apply`,
+      name: `Apply for ${ORGANIZATION_SHORT_NAME} Membership`,
+      description: `Online application form for ${ORGANIZATION_SHORT_NAME} membership.`,
+      isPartOf: {
+        "@id": `${siteUrl}#website`,
+      },
+      about: {
+        "@id": `${siteUrl}#organization`,
+      },
+      breadcrumb: {
+        "@id": `${siteUrl}/membership/apply#breadcrumb`,
+      },
+    },
+    {
+      ...createBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Membership", path: "/membership" },
+        { name: "Apply", path: "/membership/apply" },
+      ]),
+      "@id": `${siteUrl}/membership/apply#breadcrumb`,
+    },
+  ],
+}
+
 export default function MembershipApplyPage() {
-  return <MembershipApplyPageClient />
+  return (
+    <>
+      <JsonLd data={membershipApplyStructuredData} />
+      <MembershipApplyPageClient />
+    </>
+  )
 }

@@ -1,19 +1,28 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 
-import { MembershipPageClient } from "@/components/membership/membership-page-client";
+import { JsonLd } from "@/components/seo/json-ld"
+import { categories } from "@/components/membership/data"
+import { MembershipPageClient } from "@/components/membership/membership-page-client"
+import {
+  createBreadcrumbJsonLd,
+  ORGANIZATION_NAME,
+  ORGANIZATION_SHORT_NAME,
+} from "@/lib/seo"
+import { getSiteUrl } from "@/lib/site-url"
 
 const membershipOgImage =
-  "/api/og?title=PNGOSWA%20Membership&description=Join%20the%20Philippine%20NGO%20Social%20Workers%20Association";
+  "/api/og?title=PNGOSWA%20Membership&description=Join%20the%20Philippine%20NGO%20Social%20Workers%20Association"
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
-  title: "Membership | Philippine NGO Social Workers Association",
+  title: `${ORGANIZATION_SHORT_NAME} Membership`,
   description:
-    "Apply for PNGOSWA membership and review categories, privileges, validity, renewal, and membership support for NGO social workers in the Philippines.",
+    `Join ${ORGANIZATION_SHORT_NAME} and review membership categories, privileges, validity, renewal, and support for NGO social workers in the Philippines.`,
   keywords: [
     "PNGOSWA membership",
-    "Philippine NGO Social Workers Association membership",
-    "Philippine NGO membership",
-    "Ph NGO membership",
+    `${ORGANIZATION_NAME} membership`,
+    "join PNGOSWA",
+    "NGO social workers membership Philippines",
   ],
   alternates: {
     canonical: "/membership",
@@ -32,8 +41,53 @@ export const metadata: Metadata = {
       "Join PNGOSWA and access programs, development support, and membership privileges for NGO social workers.",
     images: [membershipOgImage],
   },
-};
+}
+
+const membershipStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "CollectionPage",
+      "@id": `${siteUrl}/membership#webpage`,
+      url: `${siteUrl}/membership`,
+      name: `${ORGANIZATION_SHORT_NAME} Membership`,
+      description:
+        `Membership information, benefits, categories, and application guidance for ${ORGANIZATION_SHORT_NAME}.`,
+      isPartOf: {
+        "@id": `${siteUrl}#website`,
+      },
+      about: {
+        "@id": `${siteUrl}#organization`,
+      },
+      breadcrumb: {
+        "@id": `${siteUrl}/membership#breadcrumb`,
+      },
+    },
+    {
+      "@type": "ItemList",
+      name: `${ORGANIZATION_SHORT_NAME} membership categories`,
+      itemListElement: categories.map((category, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: category.name,
+        description: category.eligibility.join(" "),
+      })),
+    },
+    {
+      ...createBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Membership", path: "/membership" },
+      ]),
+      "@id": `${siteUrl}/membership#breadcrumb`,
+    },
+  ],
+}
 
 export default function MembershipPage() {
-  return <MembershipPageClient />;
+  return (
+    <>
+      <JsonLd data={membershipStructuredData} />
+      <MembershipPageClient />
+    </>
+  )
 }

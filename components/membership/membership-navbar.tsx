@@ -50,6 +50,9 @@ export function MembershipNavbar() {
           <Link href="/about" className="nav-link">
             About
           </Link>
+          <Link href="/ethics" className="nav-link">
+            Ethics
+          </Link>
           <Link href="/#objectives" className="nav-link">
             Objectives
           </Link>
@@ -95,6 +98,9 @@ export function MembershipNavbar() {
         <div className="nav-mobile-links">
           <Link href="/about" className="nav-mobile-link" onClick={closeMenu}>
             About
+          </Link>
+          <Link href="/ethics" className="nav-mobile-link" onClick={closeMenu}>
+            Ethics
           </Link>
           <Link
             href="/#objectives"

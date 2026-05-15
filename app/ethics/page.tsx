@@ -1,16 +1,23 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { JsonLd } from "@/components/seo/json-ld"
 import { ethicsPrinciples, policyAreas } from "@/lib/constants"
 import { HomeFooter, HomeNavbar } from "@/components/home"
+import {
+  createBreadcrumbJsonLd,
+  ORGANIZATION_SHORT_NAME,
+} from "@/lib/seo"
+import { getSiteUrl } from "@/lib/site-url"
 
 const ethicsOgImage =
   "/api/og?title=PNGOSWA%20Code%20of%20Ethics&description=Code%20of%20Ethics%20and%20Policies%20of%20PNGOSWA"
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
-  title: "Code of Ethics & Policies | PNGOSWA",
+  title: `${ORGANIZATION_SHORT_NAME} Code of Ethics`,
   description:
-    "Read the PNGOSWA Code of Ethics and organizational policies aligned with the association's current programs, services, and activities.",
+    `Read the ${ORGANIZATION_SHORT_NAME} Code of Ethics and organizational policies for members, officers, and partners.`,
   alternates: {
     canonical: "/ethics",
   },
@@ -30,10 +37,41 @@ export const metadata: Metadata = {
   },
 }
 
+const ethicsStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": `${siteUrl}/ethics#webpage`,
+      url: `${siteUrl}/ethics`,
+      name: `${ORGANIZATION_SHORT_NAME} Code of Ethics`,
+      description:
+        `The code of ethics and organizational policies of ${ORGANIZATION_SHORT_NAME}.`,
+      isPartOf: {
+        "@id": `${siteUrl}#website`,
+      },
+      about: {
+        "@id": `${siteUrl}#organization`,
+      },
+      breadcrumb: {
+        "@id": `${siteUrl}/ethics#breadcrumb`,
+      },
+    },
+    {
+      ...createBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Ethics", path: "/ethics" },
+      ]),
+      "@id": `${siteUrl}/ethics#breadcrumb`,
+    },
+  ],
+}
+
 export default function EthicsPage() {
   return (
     <>
       <HomeNavbar />
+      <JsonLd data={ethicsStructuredData} />
 
       <main className="flex-1" id="top">
         <section className="page-header">

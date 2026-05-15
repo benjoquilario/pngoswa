@@ -50,6 +50,9 @@ export function HomeNavbar() {
           <Link href="/about" className="nav-link">
             About
           </Link>
+          <Link href="/ethics" className="nav-link">
+            Ethics
+          </Link>
           <Link href="/about#programs" className="nav-link">
             Programs
           </Link>
@@ -102,6 +105,9 @@ export function HomeNavbar() {
         <div className="nav-mobile-links">
           <Link href="/about" className="nav-mobile-link" onClick={closeMenu}>
             About
+          </Link>
+          <Link href="/ethics" className="nav-mobile-link" onClick={closeMenu}>
+            Ethics
           </Link>
           <Link
             href="/about#programs"

@@ -10,6 +10,34 @@ export function GallerySection() {
   const overlayRef = useRef<HTMLDivElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null)
+  const preloadedImagesRef = useRef<Set<string>>(new Set())
+
+  const preloadImage = useCallback((src: string) => {
+    if (typeof window === "undefined" || preloadedImagesRef.current.has(src)) {
+      return
+    }
+
+    const img = new window.Image()
+    img.decoding = "async"
+    img.src = src
+    preloadedImagesRef.current.add(src)
+  }, [])
+
+  const preloadNearbyImages = useCallback(
+    (index: number) => {
+      const nearbyIndexes = [
+        index,
+        (index + 1) % galleryImages.length,
+        (index - 1 + galleryImages.length) % galleryImages.length,
+        (index + 2) % galleryImages.length,
+      ]
+
+      nearbyIndexes.forEach((imageIndex) => {
+        preloadImage(galleryImages[imageIndex].src)
+      })
+    },
+    [preloadImage]
+  )
 
   const closeLightbox = useCallback(() => {
     setActiveIndex(null)
@@ -17,9 +45,31 @@ export function GallerySection() {
   }, [])
 
   useEffect(() => {
+    const warmInitialImages = () => {
+      galleryImages.slice(0, 4).forEach((image) => preloadImage(image.src))
+    }
+
+    if (typeof window === "undefined") {
+      return
+    }
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(warmInitialImages)
+
+      return () => window.cancelIdleCallback(idleId)
+    }
+
+    const timeoutId = window.setTimeout(warmInitialImages, 250)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [preloadImage])
+
+  useEffect(() => {
     if (activeIndex === null) {
       return
     }
+
+    preloadNearbyImages(activeIndex)
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
@@ -37,14 +87,18 @@ export function GallerySection() {
       if (event.key === "ArrowRight") {
         setActiveIndex((prev) => {
           if (prev === null) return 0
-          return (prev + 1) % galleryImages.length
+          const nextIndex = (prev + 1) % galleryImages.length
+          preloadNearbyImages(nextIndex)
+          return nextIndex
         })
       }
 
       if (event.key === "ArrowLeft") {
         setActiveIndex((prev) => {
           if (prev === null) return 0
-          return (prev - 1 + galleryImages.length) % galleryImages.length
+          const nextIndex = (prev - 1 + galleryImages.length) % galleryImages.length
+          preloadNearbyImages(nextIndex)
+          return nextIndex
         })
       }
 
@@ -83,21 +137,25 @@ export function GallerySection() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [activeIndex, closeLightbox])
+  }, [activeIndex, closeLightbox, preloadNearbyImages])
 
   const activeImage = activeIndex === null ? null : galleryImages[activeIndex]
 
   const showPrevImage = () => {
     setActiveIndex((prev) => {
       if (prev === null) return 0
-      return (prev - 1 + galleryImages.length) % galleryImages.length
+      const nextIndex = (prev - 1 + galleryImages.length) % galleryImages.length
+      preloadNearbyImages(nextIndex)
+      return nextIndex
     })
   }
 
   const showNextImage = () => {
     setActiveIndex((prev) => {
       if (prev === null) return 0
-      return (prev + 1) % galleryImages.length
+      const nextIndex = (prev + 1) % galleryImages.length
+      preloadNearbyImages(nextIndex)
+      return nextIndex
     })
   }
 
@@ -191,6 +249,8 @@ export function GallerySection() {
                 height={1200}
                 className="lightbox-img"
                 priority
+                unoptimized
+                sizes="(max-width: 767px) 94vw, 1100px"
               />
             </div>
 

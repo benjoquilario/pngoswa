@@ -63,9 +63,14 @@ export function MembershipNavbar() {
             Membership
           </Link>
         </div>
-        <Link href="/membership/apply" className="btn btn-cta nav-cta">
-          <UserPlusIcon /> Apply Now
-        </Link>
+        <div className="nav-actions">
+          <Link href="/member/login" className="btn btn-outline nav-secondary">
+            Member Login
+          </Link>
+          <Link href="/membership/apply" className="btn btn-cta nav-cta">
+            <UserPlusIcon /> Apply Now
+          </Link>
+        </div>
 
         <button
           ref={menuButtonRef}
@@ -122,6 +127,13 @@ export function MembershipNavbar() {
             onClick={closeMenu}
           >
             Membership
+          </Link>
+          <Link
+            href="/member/login"
+            className="btn btn-outline nav-mobile-secondary"
+            onClick={closeMenu}
+          >
+            Member Login
           </Link>
           <Link
             href="/membership/apply"

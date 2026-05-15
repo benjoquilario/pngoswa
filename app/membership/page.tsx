@@ -8,11 +8,14 @@ import {
   ORGANIZATION_NAME,
   ORGANIZATION_SHORT_NAME,
 } from "@/lib/seo"
+import { getMembershipCommunityStats } from "@/lib/membership"
 import { getSiteUrl } from "@/lib/site-url"
 
 const membershipOgImage =
   "/api/og?title=PNGOSWA%20Membership&description=Join%20the%20Philippine%20NGO%20Social%20Workers%20Association"
 const siteUrl = getSiteUrl()
+
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: `${ORGANIZATION_SHORT_NAME} Membership`,
@@ -83,11 +86,13 @@ const membershipStructuredData = {
   ],
 }
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
+  const communityStats = await getMembershipCommunityStats()
+
   return (
     <>
       <JsonLd data={membershipStructuredData} />
-      <MembershipPageClient />
+      <MembershipPageClient communityStats={communityStats} />
     </>
   )
 }

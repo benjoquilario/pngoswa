@@ -52,21 +52,32 @@ type ResolvePortalUserResult =
     }
 
 const MAGIC_LINK_TTL_MINUTES = 30
-const SESSION_TTL_DAYS = 7
 
 const portalConfig: Record<
   PortalScope,
-  { cookieName: string; loginPath: string; redirectPath: string }
+  {
+    cookieName: string
+    loginPath: string
+    redirectPath: string
+    genericSuccessMessage: string
+    sessionTtlMs: number
+  }
 > = {
   ADMIN: {
     cookieName: "pngoswa_admin_session",
     loginPath: "/admin/login",
     redirectPath: "/admin/dashboard",
+    genericSuccessMessage:
+      "If this email is authorized, a secure admin sign-in link will arrive shortly.",
+    sessionTtlMs: 12 * 60 * 60 * 1000,
   },
   MEMBER: {
     cookieName: "pngoswa_member_session",
     loginPath: "/member/login",
     redirectPath: "/member/profile",
+    genericSuccessMessage:
+      "If this email is registered, a secure member sign-in link will arrive shortly.",
+    sessionTtlMs: 3 * 24 * 60 * 60 * 1000,
   },
 }
 
@@ -80,8 +91,8 @@ function hashToken(token: string) {
 
 export function isDevelopmentAuthBypassEnabled() {
   return (
-    process.env.DEV_AUTH_BYPASS === "true" ||
-    process.env.NODE_ENV !== "production"
+    process.env.NODE_ENV !== "production" &&
+    process.env.DEV_AUTH_BYPASS === "true"
   )
 }
 
@@ -155,9 +166,22 @@ async function resolvePortalUser(
 async function createPortalSessionRecord(scope: PortalScope, userId: string) {
   const rawSessionToken = randomBytes(32).toString("hex")
   const sessionTokenHash = hashToken(rawSessionToken)
-  const expiresAt = new Date(
-    Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000
-  )
+  const expiresAt = new Date(Date.now() + portalConfig[scope].sessionTtlMs)
+
+  await prisma.authSession.deleteMany({
+    where: {
+      ...(scope === "ADMIN"
+        ? {
+            userId,
+            scope,
+          }
+        : {
+            expiresAt: {
+              lte: new Date(),
+            },
+          }),
+    },
+  })
 
   await prisma.authSession.create({
     data: {
@@ -185,9 +209,18 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
     const resolved = await resolvePortalUser(email, input.scope)
 
     if (!resolved.ok) {
+      if (resolved.message === getDatabaseUnavailableMessage()) {
+        return {
+          ok: false as const,
+          message: resolved.message,
+        }
+      }
+
       return {
-        ok: false as const,
-        message: resolved.message,
+        ok: true as const,
+        emailSent: false,
+        message: config.genericSuccessMessage,
+        debugUrl: undefined,
       }
     }
 
@@ -370,7 +403,7 @@ export async function setPortalSessionCookie(
     expires: expiresAt,
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
+    sameSite: "strict",
     secure: process.env.NODE_ENV === "production",
   })
 }

@@ -1,5 +1,7 @@
 import Link from "next/link"
 
+import type { MembershipCommunityStats } from "@/lib/membership"
+
 import {
   CategoriesSection,
   GeneralPrivilegesSection,
@@ -10,15 +12,21 @@ import {
   ValiditySection,
 } from "@/components/membership"
 
-export function MembershipPageClient() {
+type MembershipPageClientProps = {
+  communityStats: MembershipCommunityStats
+}
+
+export function MembershipPageClient({
+  communityStats,
+}: MembershipPageClientProps) {
   return (
     <>
       <MembershipNavbar />
 
       <main className="flex-1">
-        <MembershipHeaderSection />
+        <MembershipHeaderSection communityStats={communityStats} />
         <PurposeSection />
-        <CategoriesSection />
+        <CategoriesSection communityStats={communityStats} />
         <GeneralPrivilegesSection />
         <section
           id="apply"

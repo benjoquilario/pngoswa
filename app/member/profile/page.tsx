@@ -1,17 +1,29 @@
 import Link from "next/link"
 
 import { logoutMember } from "@/app/member/actions"
+import { MemberDocumentUpdateForm } from "@/components/portal/member-document-update-form"
 import { StatusBadge } from "@/components/portal/status-badge"
 import { requirePortalSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import {
+  formatMembershipStatus,
   formatMembershipType,
   formatPaymentMode,
+  getApplicationRequirementChecklist,
 } from "@/lib/membership"
+
+export const dynamic = "force-dynamic"
+
+const statusPriority: Record<string, number> = {
+  APPROVED: 4,
+  FOLLOW_UP: 3,
+  PENDING: 2,
+  REJECTED: 1,
+}
 
 export default async function MemberProfilePage() {
   const session = await requirePortalSession("MEMBER")
-  const application = await prisma.membershipApplication.findFirst({
+  const applications = await prisma.membershipApplication.findMany({
     where: {
       userId: session.user.id,
     },
@@ -33,9 +45,41 @@ export default async function MemberProfilePage() {
       },
     },
     orderBy: {
-      createdAt: "desc",
+      updatedAt: "desc",
     },
   })
+
+  const application =
+    applications
+      .slice()
+      .sort((left, right) => {
+        const priorityDifference =
+          (statusPriority[right.status] ?? 0) - (statusPriority[left.status] ?? 0)
+
+        if (priorityDifference !== 0) {
+          return priorityDifference
+        }
+
+        const leftTimestamp = (
+          left.approvedAt ??
+          left.rejectedAt ??
+          left.lastFollowUpSentAt ??
+          left.updatedAt
+        ).getTime()
+        const rightTimestamp = (
+          right.approvedAt ??
+          right.rejectedAt ??
+          right.lastFollowUpSentAt ??
+          right.updatedAt
+        ).getTime()
+
+        return rightTimestamp - leftTimestamp
+      })[0] ?? null
+
+  const latestReviewMessage = application?.reviewActions[0]?.message
+  const requirementChecklist = application
+    ? getApplicationRequirementChecklist(application)
+    : []
 
   return (
     <main className="portal-shell">
@@ -78,6 +122,10 @@ export default async function MemberProfilePage() {
             </div>
             <div className="profile-meta-grid">
               <div>
+                <span className="profile-meta-label">Profile Status</span>
+                <strong>{formatMembershipStatus(application.status)}</strong>
+              </div>
+              <div>
                 <span className="profile-meta-label">Membership Type</span>
                 <strong>{formatMembershipType(application.membershipType)}</strong>
               </div>
@@ -93,65 +141,164 @@ export default async function MemberProfilePage() {
                 <span className="profile-meta-label">Submitted</span>
                 <strong>{application.createdAt.toLocaleDateString()}</strong>
               </div>
+              <div>
+                <span className="profile-meta-label">Last Updated</span>
+                <strong>{application.updatedAt.toLocaleString()}</strong>
+              </div>
+              {application.approvedAt ? (
+                <div>
+                  <span className="profile-meta-label">Approved On</span>
+                  <strong>{application.approvedAt.toLocaleString()}</strong>
+                </div>
+              ) : null}
             </div>
+
+            {application.status === "APPROVED" ? (
+              <div className="form-feedback form-feedback-success">
+                <strong>Membership approved</strong>
+                <p>
+                  Your membership is now active in your PNGOSWA member profile.
+                </p>
+                {application.approvedAt ? (
+                  <p>Approved on {application.approvedAt.toLocaleString()}.</p>
+                ) : null}
+              </div>
+            ) : null}
+
             {application.followUpMessage ? (
               <div className="form-feedback form-feedback-warning">
                 <strong>Action needed from you</strong>
                 <p>{application.followUpMessage}</p>
               </div>
             ) : null}
+
+            {application.status === "REJECTED" ? (
+              <div className="form-feedback form-feedback-error">
+                <strong>Application not approved</strong>
+                <p>
+                  {latestReviewMessage ||
+                    "Your latest application was not approved. Please contact PNGOSWA if you need clarification."}
+                </p>
+              </div>
+            ) : null}
           </section>
 
           <section className="dashboard-panel">
             <h2 className="dashboard-section-title">Submitted documents</h2>
-            <div className="doc-list">
-              {application.documents.map((document) => (
-                <a
-                  key={document.id}
-                  href={`/api/documents/${document.id}`}
-                  className="doc-card"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <strong>{document.label}</strong>
-                  <span>{document.originalName}</span>
-                </a>
+            {application.documents.length > 0 ? (
+              <div className="doc-list">
+                {application.documents.map((document) => (
+                  <a
+                    key={document.id}
+                    href={`/api/documents/${document.id}`}
+                    className="doc-card"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <strong>{document.label}</strong>
+                    <span>{document.originalName}</span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="portal-empty-copy">
+                No supporting documents are attached to this membership record yet.
+              </p>
+            )}
+          </section>
+
+          <section className="dashboard-panel">
+            <h2 className="dashboard-section-title">Requirement checklist</h2>
+            <div className="checklist-grid">
+              {requirementChecklist.map((item) => (
+                <div key={item.label} className="checklist-item">
+                  <strong>{item.label}</strong>
+                  <span
+                    className={
+                      item.satisfied
+                        ? "status-badge status-badge-success"
+                        : item.optional
+                          ? "status-badge status-badge-info"
+                          : "status-badge status-badge-warning"
+                    }
+                  >
+                    {item.satisfied
+                      ? "Received"
+                      : item.optional
+                        ? "Optional"
+                        : "Missing"}
+                  </span>
+                </div>
               ))}
             </div>
           </section>
 
           <section className="dashboard-panel">
             <h2 className="dashboard-section-title">Review timeline</h2>
-            <div className="timeline-list">
-              {application.reviewActions.map((action) => (
-                <div key={action.id} className="timeline-item">
-                  <div className="timeline-dot" />
-                  <div>
-                    <strong>{action.subject ?? action.type}</strong>
-                    {action.message ? <p>{action.message}</p> : null}
-                    <span>{action.createdAt.toLocaleString()}</span>
+            {application.reviewActions.length > 0 ? (
+              <div className="timeline-list">
+                {application.reviewActions.map((action) => (
+                  <div key={action.id} className="timeline-item">
+                    <div className="timeline-dot" />
+                    <div>
+                      <strong>{action.subject ?? action.type}</strong>
+                      {action.message ? <p>{action.message}</p> : null}
+                      <span>{action.createdAt.toLocaleString()}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="portal-empty-copy">
+                Review history will appear here once PNGOSWA processes your record.
+              </p>
+            )}
           </section>
 
           <section className="dashboard-panel">
-            <h2 className="dashboard-section-title">Email activity</h2>
-            <div className="timeline-list">
-              {application.communications.map((communication) => (
-                <div key={communication.id} className="timeline-item">
-                  <div className="timeline-dot timeline-dot-muted" />
-                  <div>
-                    <strong>{communication.subject}</strong>
-                    <p>{communication.previewText}</p>
-                    <span>
-                      {communication.status} • {communication.createdAt.toLocaleString()}
-                    </span>
+            <h2 className="dashboard-section-title">Communication log</h2>
+            {application.communications.length > 0 ? (
+              <div className="timeline-list">
+                {application.communications.map((communication) => (
+                  <div key={communication.id} className="timeline-item">
+                    <div className="timeline-dot timeline-dot-muted" />
+                    <div>
+                      <strong>{communication.subject}</strong>
+                      <p>{communication.previewText}</p>
+                      {communication.errorMessage ? (
+                        <p className="portal-log-error">
+                          Delivery note: {communication.errorMessage}
+                        </p>
+                      ) : null}
+                      <span>
+                        {communication.status} at{" "}
+                        {communication.createdAt.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="portal-empty-copy">
+                Email and follow-up activity will appear here after PNGOSWA sends
+                updates about your application.
+              </p>
+            )}
+          </section>
+
+          <section className="dashboard-panel detail-grid-full">
+            <h2 className="dashboard-section-title">
+              Upload missing or replacement documents
+            </h2>
+            <MemberDocumentUpdateForm
+              applicationId={application.id}
+              membershipType={application.membershipType}
+              isConventionAttendee={application.isConventionAttendee}
+              hasPrcLicense={Boolean(application.prcLicense?.trim())}
+              existingDocumentTypes={application.documents.map(
+                (document) => document.type
+              )}
+            />
           </section>
         </div>
       )}

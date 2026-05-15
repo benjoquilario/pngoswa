@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Documentation
+
+Project documentation now lives in [docs/README.md](./docs/README.md).
+
+Main guides:
+
+- [Architecture](./docs/architecture.md)
+- [Features](./docs/features.md)
+- [Security](./docs/security.md)
+- [Workflows](./docs/workflows.md)
+- [Deployment](./docs/deployment.md)
+
 ## Deployment
 
 This app is Docker-ready for Dokploy and similar VPS platforms.

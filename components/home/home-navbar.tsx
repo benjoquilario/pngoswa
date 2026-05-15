@@ -69,10 +69,15 @@ export function HomeNavbar() {
             Membership
           </Link>
         </div>
-        <Link href="/membership" className="btn btn-cta nav-cta">
-          <UserPlusIcon />
-          Become a Member
-        </Link>
+        <div className="nav-actions">
+          <Link href="/member/login" className="btn btn-outline nav-secondary">
+            Member Login
+          </Link>
+          <Link href="/membership" className="btn btn-cta nav-cta">
+            <UserPlusIcon />
+            Become a Member
+          </Link>
+        </div>
 
         <button
           ref={menuButtonRef}
@@ -139,6 +144,13 @@ export function HomeNavbar() {
             onClick={closeMenu}
           >
             Membership
+          </Link>
+          <Link
+            href="/member/login"
+            className="btn btn-outline nav-mobile-secondary"
+            onClick={closeMenu}
+          >
+            Member Login
           </Link>
           <Link
             href="/membership"

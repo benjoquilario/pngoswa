@@ -17,6 +17,13 @@ import {
   getDefaultMemberPortalUrl,
   sendTransactionalEmail,
 } from "@/lib/email"
+import {
+  consumeRateLimit,
+  createRateLimitResponseMessage,
+  getClientIpFromServerAction,
+  isServerActionOriginAllowed,
+  SECURITY_RATE_LIMITS,
+} from "@/lib/security"
 
 import type { MagicLinkFormState } from "@/components/portal/magic-link-request-form"
 
@@ -24,7 +31,13 @@ export async function requestAdminMagicLink(
   _state: MagicLinkFormState,
   formData: FormData
 ): Promise<MagicLinkFormState> {
-  const email = String(formData.get("email") ?? "")
+  const email = String(formData.get("email") ?? "").trim().toLowerCase()
+
+  if (!(await isServerActionOriginAllowed())) {
+    return {
+      error: "The request origin is not allowed.",
+    }
+  }
 
   if (isDevelopmentAuthBypassEnabled()) {
     const result = await signInForDevelopment("ADMIN", email)
@@ -36,6 +49,26 @@ export async function requestAdminMagicLink(
     }
 
     redirect(result.redirectPath)
+  }
+
+  const clientIp = await getClientIpFromServerAction()
+  const [ipLimit, emailLimit] = await Promise.all([
+    consumeRateLimit({
+      ...SECURITY_RATE_LIMITS.adminMagicLinkIp,
+      identifier: clientIp,
+    }),
+    consumeRateLimit({
+      ...SECURITY_RATE_LIMITS.adminMagicLinkEmail,
+      identifier: email || "unknown-email",
+    }),
+  ])
+
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    return {
+      error: createRateLimitResponseMessage(
+        Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds)
+      ),
+    }
   }
 
   const result = await requestMagicLink({

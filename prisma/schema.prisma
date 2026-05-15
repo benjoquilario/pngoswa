@@ -223,3 +223,16 @@ model CommunicationLog {
 
   @@index([applicationId, createdAt])
 }
+
+model SecurityThrottle {
+  key             String   @id
+  action          String
+  count           Int      @default(0)
+  windowStartedAt DateTime
+  blockedUntil    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([action, windowStartedAt])
+  @@index([blockedUntil])
+}

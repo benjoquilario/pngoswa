@@ -36,7 +36,11 @@ type ApplyResponse =
     }
   | {
       ok: false
+      code?: string
       message?: string
+      applicationNumber?: string
+      loginPath?: string
+      membershipStatus?: string
       errors?: Record<string, string>
     }
 
@@ -56,6 +60,11 @@ export function ApplicationFormSection() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] =
     useState<MembershipApplicationSuccess | null>(null)
+  const [duplicateNotice, setDuplicateNotice] = useState<{
+    message: string
+    applicationNumber?: string
+    loginPath?: string
+  } | null>(null)
   const submitLockRef = useRef(false)
 
   const {
@@ -85,6 +94,7 @@ export function ApplicationFormSection() {
     submitLockRef.current = true
     setSubmitError(null)
     setSubmitSuccess(null)
+    setDuplicateNotice(null)
 
     try {
       const response = await fetch("/api/memberships/apply", {
@@ -98,6 +108,17 @@ export function ApplicationFormSection() {
       const payload = (await response.json()) as ApplyResponse
 
       if (!response.ok || !payload.ok) {
+        if (!payload.ok && payload.code === "ALREADY_APPLIED") {
+          setDuplicateNotice({
+            message:
+              payload.message ??
+              "We already have a saved application for this email.",
+            applicationNumber: payload.applicationNumber,
+            loginPath: payload.loginPath,
+          })
+          return
+        }
+
         if (!payload.ok) {
           for (const [fieldName, message] of Object.entries(
             payload.errors ?? {}
@@ -147,6 +168,35 @@ export function ApplicationFormSection() {
           Fill out the form below to apply for PNGOSWA membership. Fields marked
           with an asterisk are required.
         </p>
+
+        {duplicateNotice ? (
+          <div className="membership-toast" role="alert" aria-live="polite">
+            <div>
+              <strong>Membership application already found.</strong>
+              <p>{duplicateNotice.message}</p>
+              {duplicateNotice.applicationNumber ? (
+                <p>
+                  Saved reference: <strong>{duplicateNotice.applicationNumber}</strong>
+                </p>
+              ) : null}
+            </div>
+            <div className="membership-toast-actions">
+              <Link
+                href={duplicateNotice.loginPath ?? "/member/login"}
+                className="btn btn-cta"
+              >
+                Open Member Login
+              </Link>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setDuplicateNotice(null)}
+              >
+                Use another email
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <form onSubmit={onSubmit} noValidate className="membership-form">
           {submitSuccess ? (

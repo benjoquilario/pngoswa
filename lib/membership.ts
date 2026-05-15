@@ -146,6 +146,83 @@ type StoredMembershipDocument = StoredUpload & {
 type ExistingSubmissionResult = {
   applicationId: string
   applicationNumber: string
+  status: string
+}
+
+type MemberDocumentUpdateFieldName =
+  | "resumeUpload"
+  | "employmentProofUpload"
+  | "prcLicenseUpload"
+  | "endorsementUpload"
+  | "certificateUpload"
+  | "paymentProof"
+  | "photoUpload"
+
+type MemberDocumentUpdateResult =
+  | {
+      ok: true
+      message: string
+      updatedDocuments: string[]
+    }
+  | {
+      ok: false
+      status: number
+      message: string
+      errors?: Record<string, string>
+    }
+
+const memberDocumentFieldDefinitions: Array<{
+  fieldName: MemberDocumentUpdateFieldName
+  type: MembershipDocumentTypeValue
+  label: string
+  allowedMimeTypes: Set<string>
+}> = [
+  {
+    fieldName: "resumeUpload",
+    type: "RESUME",
+    label: "CV / Resume",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "employmentProofUpload",
+    type: "EMPLOYMENT_PROOF",
+    label: "Proof of Employment / Leadership Role",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "prcLicenseUpload",
+    type: "PRC_LICENSE",
+    label: "PRC License Copy",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "endorsementUpload",
+    type: "ENDORSEMENT",
+    label: "Recommendation / Endorsement",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "certificateUpload",
+    type: "ATTENDANCE_CERTIFICATE",
+    label: "Attendance Certificate",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "paymentProof",
+    type: "PAYMENT_PROOF",
+    label: "Proof of Payment",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "photoUpload",
+    type: "ID_PHOTO",
+    label: "2x2 ID Photo",
+    allowedMimeTypes: allowedUploadThingImageMimeTypes,
+  },
+]
+
+type MemberDocumentUpdateItem = (typeof memberDocumentFieldDefinitions)[number] & {
+  file: MembershipUploadedFile
 }
 
 function readString(formData: FormData, fieldName: string) {
@@ -887,6 +964,7 @@ async function findExistingSubmission(
     select: {
       id: true,
       applicationNumber: true,
+      status: true,
     },
   })
 
@@ -897,18 +975,54 @@ async function findExistingSubmission(
   return {
     applicationId: existing.id,
     applicationNumber: existing.applicationNumber,
+    status: existing.status,
+  }
+}
+
+async function findExistingSubmissionByEmail(
+  email: string
+): Promise<ExistingSubmissionResult | null> {
+  const existing = await prisma.membershipApplication.findFirst({
+    where: {
+      email,
+    },
+    orderBy: [
+      {
+        updatedAt: "desc",
+      },
+      {
+        createdAt: "desc",
+      },
+    ],
+    select: {
+      id: true,
+      applicationNumber: true,
+      status: true,
+    },
+  })
+
+  if (!existing) {
+    return null
+  }
+
+  return {
+    applicationId: existing.id,
+    applicationNumber: existing.applicationNumber,
+    status: existing.status,
   }
 }
 
 function buildExistingSubmissionResponse(existing: ExistingSubmissionResult) {
   return {
-    ok: true as const,
+    ok: false as const,
+    status: 409,
+    code: "ALREADY_APPLIED",
     applicationId: existing.applicationId,
     applicationNumber: existing.applicationNumber,
-    emailSent: false,
-    debugUrl: undefined,
+    membershipStatus: existing.status,
+    loginPath: "/member/login",
     message:
-      "We already received this membership application. We did not create another copy.",
+      "We already have a membership application for this email. Please sign in to your member profile to check your status or upload any missing documents there.",
   }
 }
 
@@ -944,6 +1058,61 @@ export function formatMembershipStatus(status: string) {
       return "Rejected"
     default:
       return status
+  }
+}
+
+export const REGULAR_MEMBERSHIP_WAIVER_LIMIT = 500
+
+export type MembershipCommunityStats = {
+  approvedMembers: number
+  approvedRegularMembers: number
+  freeRegularMembershipLimit: number
+  freeRegularMembershipUsed: number
+  freeRegularMembershipRemaining: number
+  freeRegularMembershipAvailable: boolean
+}
+
+async function countDistinctMembers(
+  where: Prisma.MembershipApplicationWhereInput
+) {
+  const members = await prisma.membershipApplication.findMany({
+    where,
+    distinct: ["userId"],
+    select: {
+      userId: true,
+    },
+  })
+
+  return members.length
+}
+
+export async function getMembershipCommunityStats(): Promise<MembershipCommunityStats> {
+  const [approvedMembers, approvedRegularMembers] = await Promise.all([
+    countDistinctMembers({
+      status: "APPROVED",
+    }),
+    countDistinctMembers({
+      status: "APPROVED",
+      membershipType: "REGULAR",
+    }),
+  ])
+
+  const freeRegularMembershipUsed = Math.min(
+    approvedRegularMembers,
+    REGULAR_MEMBERSHIP_WAIVER_LIMIT
+  )
+  const freeRegularMembershipRemaining = Math.max(
+    REGULAR_MEMBERSHIP_WAIVER_LIMIT - approvedRegularMembers,
+    0
+  )
+
+  return {
+    approvedMembers,
+    approvedRegularMembers,
+    freeRegularMembershipLimit: REGULAR_MEMBERSHIP_WAIVER_LIMIT,
+    freeRegularMembershipUsed,
+    freeRegularMembershipRemaining,
+    freeRegularMembershipAvailable: freeRegularMembershipRemaining > 0,
   }
 }
 
@@ -1036,6 +1205,225 @@ export function getApplicationRequirementChecklist(application: {
   ]
 }
 
+function parseUploadedMemberDocument(
+  value: unknown,
+  fieldName: string,
+  label: string,
+  allowedMimeTypes: Set<string>,
+  errors: Record<string, string>
+) {
+  if (value == null) {
+    return null
+  }
+
+  if (!isRecord(value)) {
+    errors[fieldName] = `${label} is invalid. Please upload the file again.`
+    return null
+  }
+
+  const key = typeof value.key === "string" ? value.key : ""
+  const name = typeof value.name === "string" ? value.name : ""
+  const type = typeof value.type === "string" ? value.type : ""
+  const ufsUrl = typeof value.ufsUrl === "string" ? value.ufsUrl : ""
+  const size = typeof value.size === "number" ? value.size : NaN
+
+  if (!key || !name || !type || !ufsUrl || !Number.isFinite(size)) {
+    errors[fieldName] = `${label} is invalid. Please upload the file again.`
+    return null
+  }
+
+  if (size > MAX_UPLOAD_BYTES) {
+    errors[fieldName] = `${label} must be smaller than 8MB.`
+    return null
+  }
+
+  if (!allowedMimeTypes.has(type)) {
+    errors[fieldName] = `${label} must match the allowed file types.`
+    return null
+  }
+
+  return {
+    key,
+    name,
+    size,
+    type,
+    ufsUrl,
+  } satisfies MembershipUploadedFile
+}
+
+export async function updateMembershipApplicationDocumentsForMember(
+  userId: string,
+  input: unknown
+): Promise<MemberDocumentUpdateResult> {
+  if (!isRecord(input)) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Invalid document update payload.",
+    }
+  }
+
+  const applicationId =
+    typeof input.applicationId === "string" ? input.applicationId.trim() : ""
+
+  if (!applicationId) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Missing application reference.",
+    }
+  }
+
+  const application = await prisma.membershipApplication.findFirst({
+    where: {
+      id: applicationId,
+      userId,
+    },
+    include: {
+      documents: {
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  })
+
+  if (!application) {
+    return {
+      ok: false,
+      status: 404,
+      message: "We could not find that membership application.",
+    }
+  }
+
+  const errors: Record<string, string> = {}
+  const updates = memberDocumentFieldDefinitions
+    .map((definition) => {
+      const file = parseUploadedMemberDocument(
+        input[definition.fieldName],
+        definition.fieldName,
+        definition.label,
+        definition.allowedMimeTypes,
+        errors
+      )
+
+      if (!file) {
+        return null
+      }
+
+      return {
+        ...definition,
+        file,
+      }
+    })
+    .filter((value): value is MemberDocumentUpdateItem => value !== null)
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Please review the highlighted document uploads and try again.",
+      errors,
+    }
+  }
+
+  if (updates.length === 0) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Choose at least one document to upload before saving.",
+    }
+  }
+
+  const uploadedKeys = updates.map((update) => update.file.key)
+  const replacedKeys: string[] = []
+  const documentMap = new Map(
+    application.documents.map((document) => [document.type, document])
+  )
+
+  try {
+    await prisma.$transaction([
+      ...updates.map((update) => {
+        const existingDocument = documentMap.get(update.type)
+
+        if (existingDocument && existingDocument.storedName !== update.file.key) {
+          replacedKeys.push(existingDocument.storedName)
+        }
+
+        if (existingDocument) {
+          return prisma.membershipDocument.update({
+            where: {
+              id: existingDocument.id,
+            },
+            data: {
+              label: update.label,
+              originalName: update.file.name,
+              storedName: update.file.key,
+              storagePath: update.file.ufsUrl,
+              mimeType: update.file.type || "application/octet-stream",
+              sizeBytes: update.file.size,
+            },
+          })
+        }
+
+        return prisma.membershipDocument.create({
+          data: {
+            applicationId: application.id,
+            type: update.type,
+            label: update.label,
+            originalName: update.file.name,
+            storedName: update.file.key,
+            storagePath: update.file.ufsUrl,
+            mimeType: update.file.type || "application/octet-stream",
+            sizeBytes: update.file.size,
+          },
+        })
+      }),
+      prisma.membershipApplication.update({
+        where: {
+          id: application.id,
+        },
+        data: {
+          reviewSummary: application.reviewSummary ?? null,
+        },
+      }),
+    ])
+  } catch (error) {
+    if (uploadedKeys.length > 0) {
+      try {
+        await utapi.deleteFiles(uploadedKeys)
+      } catch (cleanupError) {
+        console.error(
+          "Failed to clean up UploadThing files after document update failure:",
+          cleanupError
+        )
+      }
+    }
+
+    throw error
+  }
+
+  if (replacedKeys.length > 0) {
+    try {
+      await utapi.deleteFiles(replacedKeys)
+    } catch (cleanupError) {
+      console.error(
+        "Failed to clean up replaced UploadThing files after document update:",
+        cleanupError
+      )
+    }
+  }
+
+  return {
+    ok: true,
+    message:
+      updates.length === 1
+        ? "Your document has been saved to your membership profile."
+        : "Your updated documents have been saved to your membership profile.",
+    updatedDocuments: updates.map((update) => update.label),
+  }
+}
+
 export async function createMembershipApplication(input: FormData | unknown) {
   const parsed =
     input instanceof FormData
@@ -1048,6 +1436,14 @@ export async function createMembershipApplication(input: FormData | unknown) {
       status: 400,
       errors: parsed.errors,
     }
+  }
+
+  const existingApplication = await findExistingSubmissionByEmail(
+    parsed.values.email
+  )
+
+  if (existingApplication) {
+    return buildExistingSubmissionResponse(existingApplication)
   }
 
   const submissionFingerprint = buildSubmissionFingerprint(parsed)

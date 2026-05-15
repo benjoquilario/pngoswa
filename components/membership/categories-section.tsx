@@ -1,6 +1,19 @@
+import type { MembershipCommunityStats } from "@/lib/membership"
+
 import { categories } from "./data"
 
-export function CategoriesSection() {
+type CategoriesSectionProps = {
+  communityStats: MembershipCommunityStats
+}
+
+export function CategoriesSection({ communityStats }: CategoriesSectionProps) {
+  const progressPercent = Math.min(
+    (communityStats.freeRegularMembershipUsed /
+      communityStats.freeRegularMembershipLimit) *
+      100,
+    100
+  )
+
   return (
     <section
       id="categories"
@@ -39,6 +52,29 @@ export function CategoriesSection() {
                   <p className="cat-price-note">{category.feeNote}</p>
                 )}
                 <p className="cat-annual">{category.annual}</p>
+                {category.name === "Regular Member" ? (
+                  <div className="community-meter">
+                    <div className="community-meter-heading">
+                      <strong>
+                        {communityStats.freeRegularMembershipUsed}/
+                        {communityStats.freeRegularMembershipLimit} approved
+                        regular members
+                      </strong>
+                      <span>
+                        {communityStats.freeRegularMembershipRemaining} left
+                      </span>
+                    </div>
+                    <div
+                      className="community-progress"
+                      aria-label="Approved regular membership community count"
+                    >
+                      <span
+                        className="community-progress-bar"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="cat-section">
                 <h4 className="cat-label">Eligibility</h4>

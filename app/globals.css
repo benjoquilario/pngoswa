@@ -516,6 +516,16 @@ img {
   display: none;
 }
 
+.nav-actions {
+  display: none;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.nav-secondary {
+  min-height: 2.75rem;
+}
+
 .nav-toggle {
   display: inline-flex;
   align-items: center;
@@ -608,11 +618,22 @@ img {
   margin-top: 0.5rem;
 }
 
+.nav-mobile-secondary {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
+}
+
 @media (min-width: 768px) {
   .nav-links {
     display: flex;
   }
-  .nav-cta {
+  .nav-actions {
+    display: inline-flex;
+  }
+
+  .nav-actions .nav-cta,
+  .nav-actions .nav-secondary {
     display: inline-flex;
   }
 
@@ -1481,6 +1502,61 @@ img {
   border-radius: var(--r-xl);
   background: var(--surface-card);
 }
+
+.community-highlight {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.community-stat-card {
+  padding: 1.125rem 1.25rem;
+  border-radius: 1.125rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.community-stat-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.community-stat-value {
+  display: block;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.community-stat-copy {
+  margin: 0.75rem 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.55;
+}
+
+.community-progress {
+  width: 100%;
+  height: 0.65rem;
+  margin-top: 0.85rem;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.community-progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--amber), #f9d774);
+}
 .mem-card h3 {
   font-size: 1.125rem;
   margin-bottom: 0.75rem;
@@ -2242,6 +2318,29 @@ textarea.form-input {
   color: #7a4714;
 }
 
+.membership-toast {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1.125rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(232, 123, 26, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 249, 240, 0.98), rgba(255, 244, 226, 0.92));
+  box-shadow: 0 18px 34px rgba(138, 76, 18, 0.08);
+}
+
+.membership-toast p {
+  margin: 0.5rem 0 0;
+  color: var(--ink-secondary);
+}
+
+.membership-toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .form-feedback-list {
   margin: 0.75rem 0 0;
   padding-left: 1.125rem;
@@ -2374,6 +2473,7 @@ textarea.form-input {
   justify-content: center;
   padding: 0.45rem 0.75rem;
   border-radius: var(--r-pill);
+  border: 1px solid transparent;
   font-family: var(--font-heading), system-ui, sans-serif;
   font-size: 0.75rem;
   font-weight: 700;
@@ -2381,23 +2481,27 @@ textarea.form-input {
 }
 
 .status-badge-success {
-  background: rgba(26, 158, 96, 0.12);
-  color: #14653d;
+  background: rgba(26, 158, 96, 0.16);
+  color: #0e6c46;
+  border-color: rgba(26, 158, 96, 0.18);
 }
 
 .status-badge-warning {
   background: rgba(232, 123, 26, 0.14);
   color: #8a4c12;
+  border-color: rgba(232, 123, 26, 0.18);
 }
 
 .status-badge-danger {
   background: rgba(196, 30, 58, 0.12);
   color: #8f1f38;
+  border-color: rgba(196, 30, 58, 0.18);
 }
 
 .status-badge-info {
   background: rgba(27, 79, 138, 0.1);
   color: var(--navy-deep);
+  border-color: rgba(27, 79, 138, 0.12);
 }
 
 .doc-list {
@@ -2422,6 +2526,12 @@ textarea.form-input {
 .doc-card span {
   color: var(--ink-secondary);
   font-size: 0.875rem;
+}
+
+.portal-empty-copy {
+  margin: 0;
+  color: var(--ink-secondary);
+  line-height: 1.65;
 }
 
 .timeline-list {
@@ -2457,6 +2567,59 @@ textarea.form-input {
 .timeline-dot-muted {
   background: rgba(27, 79, 138, 0.26);
   box-shadow: 0 0 0 4px rgba(27, 79, 138, 0.06);
+}
+
+.portal-log-error {
+  color: #8f1f38;
+}
+
+.member-doc-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.member-doc-notice p {
+  margin: 0.35rem 0 0;
+}
+
+.member-doc-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.member-doc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.875rem;
+}
+
+.member-doc-meta {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+.community-meter {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(27, 79, 138, 0.06);
+  border: 1px solid rgba(27, 79, 138, 0.08);
+}
+
+.community-meter-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--navy-deep);
+  font-size: 0.875rem;
+}
+
+.community-meter-heading span {
+  color: var(--ink-secondary);
+  font-weight: 600;
 }
 
 .dashboard-shell {
@@ -2543,6 +2706,36 @@ textarea.form-input {
 .dashboard-hero .section-label {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+.dashboard-hero .status-badge {
+  min-height: 2.5rem;
+  padding-inline: 1rem;
+  box-shadow: 0 18px 30px rgba(5, 16, 37, 0.18);
+}
+
+.dashboard-hero .status-badge-success {
+  background: linear-gradient(135deg, rgba(67, 176, 117, 0.34), rgba(26, 158, 96, 0.26));
+  border-color: rgba(183, 247, 205, 0.28);
+  color: #effff4;
+}
+
+.dashboard-hero .status-badge-warning {
+  background: linear-gradient(135deg, rgba(255, 184, 77, 0.28), rgba(232, 123, 26, 0.22));
+  border-color: rgba(255, 220, 160, 0.3);
+  color: #fff7e7;
+}
+
+.dashboard-hero .status-badge-danger {
+  background: linear-gradient(135deg, rgba(229, 86, 112, 0.28), rgba(196, 30, 58, 0.22));
+  border-color: rgba(255, 194, 205, 0.3);
+  color: #fff0f3;
+}
+
+.dashboard-hero .status-badge-info {
+  background: linear-gradient(135deg, rgba(125, 180, 255, 0.25), rgba(0, 163, 215, 0.2));
+  border-color: rgba(201, 228, 255, 0.28);
+  color: #f0f8ff;
 }
 
 .dashboard-hero .dashboard-title,
@@ -2637,6 +2830,10 @@ textarea.form-input {
 @media (min-width: 900px) {
   .portal-grid,
   .detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-doc-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

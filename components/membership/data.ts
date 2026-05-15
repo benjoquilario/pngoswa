@@ -24,9 +24,10 @@ export const categories: MembershipCategory[] = [
     badge: "Most Popular",
     badgeBg: "var(--navy)",
     accent: "var(--navy)",
-    fee: "₱1,000",
-    feeNote: "one-time (covers ID & shirt)",
-    annual: "₱500 / year",
+    fee: "Free for first 500 approved members",
+    feeNote:
+      "Regular membership fee is waived during the first 500-member allocation. Only the required ID and shirt payment still applies.",
+    annual: "PHP 500 / year upon renewal",
     eligibility: [
       "Licensed social workers (RSw)",
       "Currently working or with prior experience in NGOs, CSOs, foundations, faith-based organizations, or development projects",
@@ -53,7 +54,7 @@ export const categories: MembershipCategory[] = [
     badge: "Premium",
     badgeBg: "var(--amber)",
     accent: "var(--amber)",
-    fee: "₱3,000",
+    fee: "PHP 3,000",
     feeNote: "one-time (covers ID & shirt)",
     annual: "No annual dues",
     eligibility: [
@@ -122,12 +123,13 @@ export const membershipTypeOptions: MembershipTypeOption[] = [
   {
     value: "regular",
     label: "Regular Member",
-    desc: "Licensed RSw with NGO experience - ₱1,000 + ₱500/year",
+    desc:
+      "Licensed RSw with NGO experience - first 500 approved members are free, then PHP 500/year on renewal",
   },
   {
     value: "lifetime",
     label: "Lifetime Member",
-    desc: "Management-level, 10-15+ years - ₱3,000 one-time",
+    desc: "Management-level, 10-15+ years - PHP 3,000 one-time",
   },
   {
     value: "honorary",

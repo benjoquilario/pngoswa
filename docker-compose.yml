@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      RUN_DB_MIGRATIONS: ${RUN_DB_MIGRATIONS:-true}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+  prisma_studio:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      RUN_DB_MIGRATIONS: "false"
+    command:
+      [
+        "node_modules/.bin/prisma",
+        "studio",
+        "--hostname",
+        "0.0.0.0",
+        "--port",
+        "5555",
+      ]
+    ports:
+      - "5555:5555"
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

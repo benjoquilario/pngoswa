@@ -7,10 +7,16 @@
 # To ensure security and compatibility, regularly update the NODE_VERSION ARG to the latest LTS version.
 ARG NODE_VERSION=24.13.0-slim
 
-FROM node:${NODE_VERSION} AS dependencies
+FROM node:${NODE_VERSION} AS base
 
-# Set working directory
 WORKDIR /app
+
+# Prisma needs OpenSSL available in slim images during generate, migrate, and runtime.
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+FROM base AS dependencies
 
 # Copy package-related files first to leverage Docker's caching mechanism
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* pnpm-workspace.yaml prisma.config.ts ./
@@ -34,10 +40,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # Stage 2: Build Next.js application in standalone mode
 # ============================================
 
-FROM node:${NODE_VERSION} AS builder
-
-# Set working directory
-WORKDIR /app
+FROM base AS builder
 
 # Copy project dependencies from dependencies stage
 COPY --from=dependencies /app/node_modules ./node_modules
@@ -69,10 +72,7 @@ RUN if [ -f package-lock.json ]; then \
 # Stage 3: Run Next.js application
 # ============================================
 
-FROM node:${NODE_VERSION} AS runner
-
-# Set working directory
-WORKDIR /app
+FROM base AS runner
 
 # Set production environment variables
 ENV NODE_ENV=production

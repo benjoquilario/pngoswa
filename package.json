@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down --remove-orphans",
     "admins:sync": "node --experimental-strip-types --experimental-specifier-resolution=node --import dotenv/config ./scripts/sync-admins.ts"
   },
   "dependencies": {

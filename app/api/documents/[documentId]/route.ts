@@ -2,6 +2,8 @@ import { getCurrentPortalSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { readStoredFile } from "@/lib/storage"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ documentId: string }> }

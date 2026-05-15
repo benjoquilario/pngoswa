@@ -6,6 +6,8 @@ const globalForDatabase = globalThis as typeof globalThis & {
   prisma?: PrismaClient
 }
 
+let prismaClient: PrismaClient | undefined
+
 function normalizeConnectionString(connectionString: string) {
   try {
     const url = new URL(connectionString)
@@ -78,6 +80,20 @@ function createDatabaseClient() {
   })
 }
 
+export function getPrismaClient() {
+  if (prismaClient) {
+    return prismaClient
+  }
+
+  prismaClient = globalForDatabase.prisma ?? createDatabaseClient()
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForDatabase.prisma = prismaClient
+  }
+
+  return prismaClient
+}
+
 export function isDatabaseConnectionError(error: unknown) {
   if (!(error instanceof Error)) {
     return false
@@ -106,11 +122,16 @@ export function isDatabaseConnectionError(error: unknown) {
 }
 
 export function getDatabaseUnavailableMessage() {
-  return "The database is unavailable right now. Start your local Postgres/Prisma database or update DATABASE_URL, then try again."
+  return "The database is unavailable right now. Check your Prisma Postgres DATABASE_URL and try again."
 }
 
-export const prisma = globalForDatabase.prisma ?? createDatabaseClient()
+// Delay Prisma setup until the first real query so `next build` can import
+// route modules without requiring a live DATABASE_URL at image build time.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = getPrismaClient()
+    const value = Reflect.get(client, property, client)
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDatabase.prisma = prisma
-}
+    return typeof value === "function" ? value.bind(client) : value
+  },
+}) as PrismaClient

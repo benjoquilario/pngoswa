@@ -25,36 +25,27 @@ function isInternalHostname(hostname: string) {
 }
 
 function resolveConfiguredSiteUrl() {
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL
+  }
+
   const configured = process.env.NEXT_PUBLIC_SITE_URL
 
   if (!configured) {
-    return process.env.NODE_ENV === "production"
-      ? PRODUCTION_SITE_URL
-      : LOCAL_SITE_URL
+    return LOCAL_SITE_URL
   }
 
   try {
     const normalized = normalizeSiteUrl(configured)
     const url = new URL(normalized)
 
-    if (process.env.NODE_ENV === "production") {
-      if (isInternalHostname(url.hostname)) {
-        return PRODUCTION_SITE_URL
-      }
-
-      if (
-        url.hostname.toLowerCase() === "pngoswa.org" ||
-        url.hostname.toLowerCase() === "www.pngoswa.org"
-      ) {
-        return PRODUCTION_SITE_URL
-      }
+    if (isInternalHostname(url.hostname)) {
+      return LOCAL_SITE_URL
     }
 
     return normalized
   } catch {
-    return process.env.NODE_ENV === "production"
-      ? PRODUCTION_SITE_URL
-      : LOCAL_SITE_URL
+    return LOCAL_SITE_URL
   }
 }
 

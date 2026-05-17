@@ -25,24 +25,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async redirects() {
-    return process.env.NODE_ENV === "production"
-      ? [
-          {
-            source: "/:path*",
-            has: [
-              {
-                type: "host",
-                value: "pngoswa.org",
-              },
-            ],
-            destination: "https://www.pngoswa.org/:path*",
-            permanent: true,
-            basePath: false,
-          },
-        ]
-      : []
-  },
   async headers() {
     return [
       {

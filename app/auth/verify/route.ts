@@ -6,6 +6,7 @@ import {
   getClientIpFromRequest,
   SECURITY_RATE_LIMITS,
 } from "@/lib/security"
+import { buildAbsoluteSiteUrl } from "@/lib/site-url"
 
 const noIndexHeaders = {
   "X-Robots-Tag": "noindex, nofollow, noarchive",
@@ -15,7 +16,7 @@ function redirectWithNoIndex(path: string, request: Request) {
   return new Response(null, {
     status: 307,
     headers: {
-      Location: new URL(path, request.url).toString(),
+      Location: buildAbsoluteSiteUrl(path, request.headers),
       ...noIndexHeaders,
     },
   })

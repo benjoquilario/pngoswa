@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+import { buildAbsoluteSiteUrl } from "@/lib/site-url"
+
 const ADMIN_SESSION_COOKIE = "pngoswa_admin_session"
 const MEMBER_SESSION_COOKIE = "pngoswa_member_session"
 const CANONICAL_PRODUCTION_HOST = "www.pngoswa.org"
 const APEX_PRODUCTION_HOST = "pngoswa.org"
 
 function redirectTo(request: NextRequest, pathname: string) {
-  const url = request.nextUrl.clone()
-  url.pathname = pathname
-  url.search = ""
-  return NextResponse.redirect(url)
+  return NextResponse.redirect(buildAbsoluteSiteUrl(pathname, request.headers))
 }
 
 export function proxy(request: NextRequest) {
@@ -20,10 +19,11 @@ export function proxy(request: NextRequest) {
   const isProduction = process.env.NODE_ENV === "production"
 
   if (isProduction && hostname === APEX_PRODUCTION_HOST) {
-    const canonicalUrl = nextUrl.clone()
+    const canonicalUrl = new URL(
+      buildAbsoluteSiteUrl(pathname, request.headers)
+    )
     canonicalUrl.hostname = CANONICAL_PRODUCTION_HOST
-    canonicalUrl.protocol = "https:"
-    canonicalUrl.port = ""
+    canonicalUrl.search = nextUrl.search
     return NextResponse.redirect(canonicalUrl, 308)
   }
 

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto"
 
 import { requestMagicLink } from "@/lib/auth"
-import { prisma } from "@/lib/db"
+import { isDatabaseConnectionError, prisma } from "@/lib/db"
 import { Prisma } from "@/lib/generated/prisma/client"
 import type {
   MembershipStatus as MembershipStatusValue,
@@ -1368,7 +1368,23 @@ async function countDistinctMembers(
   return members.length
 }
 
+function buildDefaultMembershipCommunityStats(): MembershipCommunityStats {
+  return {
+    approvedMembers: 0,
+    approvedRegularMembers: 0,
+    freeRegularMembershipLimit: REGULAR_MEMBERSHIP_WAIVER_LIMIT,
+    freeRegularMembershipUsed: 0,
+    freeRegularMembershipRemaining: REGULAR_MEMBERSHIP_WAIVER_LIMIT,
+    freeRegularMembershipAvailable: true,
+  }
+}
+
 export async function getMembershipCommunityStats(): Promise<MembershipCommunityStats> {
+  if (!process.env.DATABASE_URL) {
+    return buildDefaultMembershipCommunityStats()
+  }
+
+  try {
   const [approvedMembers, approvedRegularMembers] = await Promise.all([
     countDistinctMembers({
       status: "APPROVED",
@@ -1395,6 +1411,13 @@ export async function getMembershipCommunityStats(): Promise<MembershipCommunity
     freeRegularMembershipUsed,
     freeRegularMembershipRemaining,
     freeRegularMembershipAvailable: freeRegularMembershipRemaining > 0,
+  }
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return buildDefaultMembershipCommunityStats()
+    }
+
+    throw error
   }
 }
 

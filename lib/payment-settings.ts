@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache"
 
-import { prisma } from "@/lib/db"
+import { isDatabaseConnectionError, prisma } from "@/lib/db"
 import type { MembershipUploadedFile } from "@/lib/membership-form"
 import { utapi } from "@/lib/uploadthing"
 
@@ -118,13 +118,25 @@ function mapPaymentSettings(
 }
 
 export async function getPublicPaymentSettings(): Promise<PublicPaymentSettings> {
-  const settings = await prisma.paymentSettings.findUnique({
-    where: {
-      id: DEFAULT_PAYMENT_SETTINGS_ID,
-    },
-  })
+  if (!process.env.DATABASE_URL) {
+    return mapPaymentSettings(null)
+  }
 
-  return mapPaymentSettings(settings)
+  try {
+    const settings = await prisma.paymentSettings.findUnique({
+      where: {
+        id: DEFAULT_PAYMENT_SETTINGS_ID,
+      },
+    })
+
+    return mapPaymentSettings(settings)
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return mapPaymentSettings(null)
+    }
+
+    throw error
+  }
 }
 
 export async function updatePaymentSettings(

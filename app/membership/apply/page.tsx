@@ -15,6 +15,8 @@ const membershipApplyOgImage =
   "/api/og?title=PNGOSWA%20Membership%20Application&description=Complete%20your%20PNGOSWA%20membership%20application%20form"
 const siteUrl = getSiteUrl()
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: `Apply for ${ORGANIZATION_SHORT_NAME} Membership`,
   description: `Complete the online membership application form for ${ORGANIZATION_NAME}.`,

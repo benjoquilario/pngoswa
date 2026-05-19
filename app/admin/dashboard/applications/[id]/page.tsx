@@ -163,16 +163,10 @@ export default async function ApplicationDetailPage({
                   className={
                     item.satisfied
                       ? "status-badge status-badge-success"
-                      : item.optional
-                        ? "status-badge status-badge-info"
-                        : "status-badge status-badge-warning"
+                      : "status-badge status-badge-warning"
                   }
                 >
-                  {item.satisfied
-                    ? "Received"
-                    : item.optional
-                      ? "Optional"
-                      : "Missing"}
+                  {item.satisfied ? "Received" : "Missing"}
                 </span>
               </div>
             ))}
@@ -183,23 +177,24 @@ export default async function ApplicationDetailPage({
           <h2 className="dashboard-section-title">Submitted documents</h2>
           <div className="review-doc-grid">
             {requirementReviewItems.map((item) => (
-              <article key={item.key} className="review-doc-card">
+              <article
+                key={item.key}
+                className={
+                  item.optional && item.documents.length === 0
+                    ? "review-doc-card review-doc-card-optional-empty"
+                    : "review-doc-card"
+                }
+              >
                 <div className="review-doc-head">
                   <strong>{item.label}</strong>
                   <span
                     className={
                       item.satisfied
                         ? "status-badge status-badge-success"
-                        : item.optional
-                          ? "status-badge status-badge-info"
-                          : "status-badge status-badge-warning"
+                        : "status-badge status-badge-warning"
                     }
                   >
-                    {item.satisfied
-                      ? "Received"
-                      : item.optional
-                        ? "Optional"
-                        : "Missing"}
+                    {item.satisfied ? "Received" : "Missing"}
                   </span>
                 </div>
                 <p className="review-doc-copy">{item.helperText}</p>
@@ -219,31 +214,22 @@ export default async function ApplicationDetailPage({
                     ))}
                   </div>
                 ) : (
-                  <p className="review-doc-empty">
+                  <p
+                    className={
+                      item.optional
+                        ? "review-doc-empty review-doc-empty-optional"
+                        : "review-doc-empty review-doc-empty-required"
+                    }
+                  >
+                    <span className="review-doc-empty-icon" aria-hidden="true">
+                      !
+                    </span>
                     {item.optional
-                      ? "No file uploaded for this optional requirement."
+                      ? "Missing: no file uploaded for this optional requirement."
                       : "No file uploaded yet for this required item."}
                   </p>
                 )}
               </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="dashboard-panel">
-          <h2 className="dashboard-section-title">All uploaded files</h2>
-          <div className="doc-list">
-            {application.documents.map((document) => (
-              <a
-                key={document.id}
-                href={`/api/documents/${document.id}`}
-                className="doc-card"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <strong>{document.label}</strong>
-                <span>{document.originalName}</span>
-              </a>
             ))}
           </div>
         </section>

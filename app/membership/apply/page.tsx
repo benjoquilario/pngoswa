@@ -1,13 +1,15 @@
 import type { Metadata } from "next"
 
-import { JsonLd } from "@/components/seo/json-ld"
-import { MembershipApplyPageClient } from "@/components/membership/membership-apply-page-client"
+import { getMembershipCommunityStats } from "@/lib/membership"
+import { getPublicPaymentSettings } from "@/lib/payment-settings"
 import {
   createBreadcrumbJsonLd,
   ORGANIZATION_NAME,
   ORGANIZATION_SHORT_NAME,
 } from "@/lib/seo"
 import { getSiteUrl } from "@/lib/site-url"
+import { MembershipApplyPageClient } from "@/components/membership/membership-apply-page-client"
+import { JsonLd } from "@/components/seo/json-ld"
 
 const membershipApplyOgImage =
   "/api/og?title=PNGOSWA%20Membership%20Application&description=Complete%20your%20PNGOSWA%20membership%20application%20form"
@@ -15,8 +17,7 @@ const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   title: `Apply for ${ORGANIZATION_SHORT_NAME} Membership`,
-  description:
-    `Complete the online membership application form for ${ORGANIZATION_NAME}.`,
+  description: `Complete the online membership application form for ${ORGANIZATION_NAME}.`,
   alternates: {
     canonical: "/membership/apply",
   },
@@ -64,11 +65,19 @@ const membershipApplyStructuredData = {
   ],
 }
 
-export default function MembershipApplyPage() {
+export default async function MembershipApplyPage() {
+  const [paymentSettings, communityStats] = await Promise.all([
+    getPublicPaymentSettings(),
+    getMembershipCommunityStats(),
+  ])
+
   return (
     <>
       <JsonLd data={membershipApplyStructuredData} />
-      <MembershipApplyPageClient />
+      <MembershipApplyPageClient
+        paymentSettings={paymentSettings}
+        communityStats={communityStats}
+      />
     </>
   )
 }

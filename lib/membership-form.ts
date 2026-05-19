@@ -32,13 +32,15 @@ export type MembershipApplicationFormValues = {
   otherOrganizations: string
   membershipType: string
   paymentMode: string
+  paymentCategory: string
   isConventionAttendee: string
   resumeUpload: MembershipUploadedFile | null
   employmentProofUpload: MembershipUploadedFile | null
   prcLicenseUpload: MembershipUploadedFile | null
   endorsementUpload: MembershipUploadedFile | null
   certificateUpload: MembershipUploadedFile | null
-  paymentProof: MembershipUploadedFile | null
+  membershipPaymentProof: MembershipUploadedFile | null
+  shirtIdPaymentProof: MembershipUploadedFile | null
   photoUpload: MembershipUploadedFile | null
   agreed: boolean
 }
@@ -76,13 +78,15 @@ export const membershipFormDefaults: MembershipApplicationFormValues = {
   otherOrganizations: "",
   membershipType: "",
   paymentMode: "",
+  paymentCategory: "",
   isConventionAttendee: "",
   resumeUpload: null,
   employmentProofUpload: null,
   prcLicenseUpload: null,
   endorsementUpload: null,
   certificateUpload: null,
-  paymentProof: null,
+  membershipPaymentProof: null,
+  shirtIdPaymentProof: null,
   photoUpload: null,
   agreed: false,
 }
@@ -93,6 +97,7 @@ export const membershipUploadFieldNames = [
   "prcLicenseUpload",
   "endorsementUpload",
   "certificateUpload",
-  "paymentProof",
+  "membershipPaymentProof",
+  "shirtIdPaymentProof",
   "photoUpload",
 ] as const

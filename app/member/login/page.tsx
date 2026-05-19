@@ -27,7 +27,7 @@ export default async function MemberLoginPage({
           description={
             isDevBypass
               ? "Enter the same email you used in your membership application. In development, you will be signed in directly without email."
-              : "Enter the same email you used in your membership application. We will send a secure sign-in link so you can check your application status."
+              : "Enter the same email you used in your membership application. We will send a secure one-time link that signs you in and opens your membership profile."
           }
           initialError={
             params.invalid === "1"

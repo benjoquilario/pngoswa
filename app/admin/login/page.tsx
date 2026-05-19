@@ -27,7 +27,7 @@ export default async function AdminLoginPage({
           description={
             isDevBypass
               ? "Use an admin email that has already been synced into the database. In development, approved admin accounts are signed in directly and redirected to the dashboard without email delivery."
-              : "Use an admin email that has already been synced into the database to receive a secure access link for the PNGOSWA membership review dashboard."
+              : "Use an admin email that has already been synced into the database. We will send a secure one-time link that signs you in and opens the PNGOSWA membership review dashboard."
           }
           initialError={
             params.invalid === "1"

@@ -18,11 +18,26 @@ import {
 
 import type { MagicLinkFormState } from "@/components/portal/magic-link-request-form"
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export async function requestMemberMagicLink(
   _state: MagicLinkFormState,
   formData: FormData
 ): Promise<MagicLinkFormState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase()
+
+  if (!email) {
+    return {
+      error: "Enter the email address linked to your membership application.",
+    }
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    return {
+      error: "Enter a valid email address.",
+      submittedEmail: email,
+    }
+  }
 
   if (!(await isServerActionOriginAllowed())) {
     return {
@@ -76,6 +91,8 @@ export async function requestMemberMagicLink(
   return {
     success: result.message,
     debugUrl: result.debugUrl,
+    submittedEmail: result.submittedEmail,
+    expiresInMinutes: result.expiresInMinutes,
   }
 }
 

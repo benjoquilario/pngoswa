@@ -1,0 +1,1 @@
+ALTER TYPE "PaymentModeOption" ADD VALUE IF NOT EXISTS 'QR_CODE';

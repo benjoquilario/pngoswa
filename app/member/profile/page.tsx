@@ -5,18 +5,22 @@ import { MemberDocumentUpdateForm } from "@/components/portal/member-document-up
 import { StatusBadge } from "@/components/portal/status-badge"
 import { requirePortalSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { formatOfficerRoleName } from "@/lib/officer-roles"
 import {
+  formatPaymentCategory,
   formatMembershipStatus,
   formatMembershipType,
   formatPaymentMode,
+  getApplicationPaymentProofStatus,
   getApplicationRequirementChecklist,
 } from "@/lib/membership"
 
 export const dynamic = "force-dynamic"
 
 const statusPriority: Record<string, number> = {
-  APPROVED: 4,
-  FOLLOW_UP: 3,
+  APPROVED: 5,
+  FOLLOW_UP: 4,
+  NO_PROOF_OF_PAYMENT: 3,
   PENDING: 2,
   REJECTED: 1,
 }
@@ -80,6 +84,9 @@ export default async function MemberProfilePage() {
   const requirementChecklist = application
     ? getApplicationRequirementChecklist(application)
     : []
+  const paymentProofStatus = application
+    ? getApplicationPaymentProofStatus(application)
+    : null
 
   return (
     <main className="portal-shell">
@@ -130,8 +137,18 @@ export default async function MemberProfilePage() {
                 <strong>{formatMembershipType(application.membershipType)}</strong>
               </div>
               <div>
+                <span className="profile-meta-label">Assigned Role</span>
+                <strong>{formatOfficerRoleName(application.officerRoleName)}</strong>
+              </div>
+              <div>
                 <span className="profile-meta-label">Payment Mode</span>
                 <strong>{formatPaymentMode(application.paymentMode)}</strong>
+              </div>
+              <div>
+                <span className="profile-meta-label">Membership Payment</span>
+                <strong>
+                  {formatPaymentCategory(application.paymentCategory)}
+                </strong>
               </div>
               <div>
                 <span className="profile-meta-label">Organization</span>
@@ -159,6 +176,12 @@ export default async function MemberProfilePage() {
                 <p>
                   Your membership is now active in your PNGOSWA member profile.
                 </p>
+                {application.officerRoleName ? (
+                  <p>
+                    Assigned role:{" "}
+                    {formatOfficerRoleName(application.officerRoleName)}.
+                  </p>
+                ) : null}
                 {application.approvedAt ? (
                   <p>Approved on {application.approvedAt.toLocaleString()}.</p>
                 ) : null}
@@ -169,6 +192,33 @@ export default async function MemberProfilePage() {
               <div className="form-feedback form-feedback-warning">
                 <strong>Action needed from you</strong>
                 <p>{application.followUpMessage}</p>
+              </div>
+            ) : null}
+
+            {application.status === "NO_PROOF_OF_PAYMENT" ? (
+              <div className="form-feedback form-feedback-warning">
+                <strong>Proof of payment still needed</strong>
+                <p>
+                  Your application was submitted successfully, but some payment
+                  proof is still missing. Please upload the remaining required
+                  proof below from your member profile so PNGOSWA officers can
+                  continue the review.
+                </p>
+                {paymentProofStatus ? (
+                  <p>
+                    Membership fee proof:{" "}
+                    {paymentProofStatus.membershipProofRequired
+                      ? paymentProofStatus.membershipProofReceived
+                        ? "received"
+                        : "missing"
+                      : "waived / not required"}
+                    . T-Shirt and ID proof:{" "}
+                    {paymentProofStatus.shirtIdProofReceived
+                      ? "received"
+                      : "missing"}
+                    .
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
@@ -293,6 +343,7 @@ export default async function MemberProfilePage() {
             <MemberDocumentUpdateForm
               applicationId={application.id}
               membershipType={application.membershipType}
+              paymentCategory={application.paymentCategory}
               isConventionAttendee={application.isConventionAttendee}
               hasPrcLicense={Boolean(application.prcLicense?.trim())}
               existingDocumentTypes={application.documents.map(

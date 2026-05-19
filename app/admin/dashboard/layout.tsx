@@ -24,7 +24,13 @@ export default async function AdminDashboardLayout({
 
         <nav className="dashboard-nav">
           <Link href="/admin/dashboard" className="dashboard-nav-link">
-            Overview
+            Review Queue
+          </Link>
+          <Link
+            href="/admin/dashboard/payment-settings"
+            className="dashboard-nav-link"
+          >
+            Payment Settings
           </Link>
         </nav>
 

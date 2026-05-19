@@ -82,7 +82,7 @@ export function MembershipHeaderSection({
             <p className="community-stat-copy">
               {communityStats.freeRegularMembershipRemaining > 0
                 ? `${communityStats.freeRegularMembershipRemaining} free regular-member slots left.`
-                : "The first 500 free regular-member slots have all been claimed."}
+                : `The first ${communityStats.freeRegularMembershipLimit} free regular-member slots have all been claimed.`}
             </p>
           </article>
         </div>

@@ -14,6 +14,7 @@ enum UserRole {
 
 enum MembershipStatus {
   PENDING
+  NO_PROOF_OF_PAYMENT
   FOLLOW_UP
   APPROVED
   REJECTED
@@ -47,9 +48,17 @@ enum EmploymentStatusOption {
 
 enum PaymentModeOption {
   GCASH
+  MAYA
+  QR_CODE
   BANK_TRANSFER
   CASH
   OTHER
+}
+
+enum MembershipPaymentCategory {
+  WAIVED_FREE_MEMBERSHIP
+  REGULAR_ANNUAL_MEMBERSHIP
+  LIFETIME_NO_ANNUAL_MEMBERSHIP
 }
 
 enum MembershipDocumentType {
@@ -59,6 +68,8 @@ enum MembershipDocumentType {
   ENDORSEMENT
   ATTENDANCE_CERTIFICATE
   PAYMENT_PROOF
+  MEMBERSHIP_PAYMENT_PROOF
+  SHIRT_ID_PAYMENT_PROOF
   ID_PHOTO
 }
 
@@ -91,6 +102,7 @@ model User {
   email                  String                 @unique
   name                   String?
   role                   UserRole               @default(MEMBER)
+  officerRoleName        String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   membershipApplications MembershipApplication[]
@@ -132,8 +144,10 @@ model MembershipApplication {
   specializations        String
   otherOrganizations     String?
   paymentMode            PaymentModeOption
+  paymentCategory        MembershipPaymentCategory
   isConventionAttendee   Boolean
   agreedToPrivacy        Boolean
+  officerRoleName        String?
   reviewSummary          String?
   followUpMessage        String?
   lastFollowUpSentAt     DateTime?
@@ -175,6 +189,13 @@ model MembershipReviewAction {
   createdAt     DateTime               @default(now())
 
   @@index([applicationId, createdAt])
+}
+
+model ApplicationNumberSequence {
+  year                Int      @id
+  lastGeneralSequence Int      @default(10)
+  lastOfficerSequence Int      @default(0)
+  updatedAt           DateTime @updatedAt
 }
 
 model MagicLinkToken {
@@ -222,6 +243,20 @@ model CommunicationLog {
   createdAt     DateTime               @default(now())
 
   @@index([applicationId, createdAt])
+}
+
+model PaymentSettings {
+  id                 String   @id @default("default")
+  gcashNumber        String?
+  mayaNumber         String?
+  privacyMessage     String?
+  qrCodeStoredName   String?
+  qrCodeOriginalName String?
+  qrCodeUrl          String?
+  qrCodeMimeType     String?
+  qrCodeSizeBytes    Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model SecurityThrottle {

@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useMemo, useState } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 
 import type { MembershipUploadedFile } from "@/lib/membership-form"
@@ -9,6 +9,7 @@ import { UploadInput } from "@/components/ui"
 type MemberDocumentUpdateFormProps = {
   applicationId: string
   membershipType: string
+  paymentCategory: string
   isConventionAttendee: boolean
   hasPrcLicense: boolean
   existingDocumentTypes: string[]
@@ -20,7 +21,8 @@ type MemberDocumentUpdateValues = {
   prcLicenseUpload: MembershipUploadedFile | null
   endorsementUpload: MembershipUploadedFile | null
   certificateUpload: MembershipUploadedFile | null
-  paymentProof: MembershipUploadedFile | null
+  membershipPaymentProof: MembershipUploadedFile | null
+  shirtIdPaymentProof: MembershipUploadedFile | null
   photoUpload: MembershipUploadedFile | null
 }
 
@@ -42,13 +44,15 @@ const emptyValues: MemberDocumentUpdateValues = {
   prcLicenseUpload: null,
   endorsementUpload: null,
   certificateUpload: null,
-  paymentProof: null,
+  membershipPaymentProof: null,
+  shirtIdPaymentProof: null,
   photoUpload: null,
 }
 
 export function MemberDocumentUpdateForm({
   applicationId,
   membershipType,
+  paymentCategory,
   isConventionAttendee,
   hasPrcLicense,
   existingDocumentTypes,
@@ -107,9 +111,18 @@ export function MemberDocumentUpdateForm({
         required: isConventionAttendee,
       },
       {
-        fieldName: "paymentProof" as const,
-        type: "PAYMENT_PROOF",
-        label: "Proof of Payment",
+        fieldName: "membershipPaymentProof" as const,
+        type: "MEMBERSHIP_PAYMENT_PROOF",
+        label: "Membership Fee Proof of Payment",
+        endpoint: "membershipDocument" as const,
+        accept: ".pdf,.jpg,.jpeg,.png",
+        allowedText: "PDF, JPG, or PNG up to 8MB",
+        required: paymentCategory !== "WAIVED_FREE_MEMBERSHIP",
+      },
+      {
+        fieldName: "shirtIdPaymentProof" as const,
+        type: "SHIRT_ID_PAYMENT_PROOF",
+        label: "T-Shirt and ID Proof of Payment",
         endpoint: "membershipDocument" as const,
         accept: ".pdf,.jpg,.jpeg,.png",
         allowedText: "PDF, JPG, or PNG up to 8MB",
@@ -125,10 +138,15 @@ export function MemberDocumentUpdateForm({
         required: true,
       },
     ],
-    [hasPrcLicense, isConventionAttendee, membershipType]
+    [hasPrcLicense, isConventionAttendee, membershipType, paymentCategory]
   )
 
   const selectedUploadsCount = Object.values(values).filter(Boolean).length
+  const hasExistingDocument = (type: string) =>
+    existingDocumentTypes.includes(type) ||
+    (existingDocumentTypes.includes("PAYMENT_PROOF") &&
+      (type === "MEMBERSHIP_PAYMENT_PROOF" ||
+        type === "SHIRT_ID_PAYMENT_PROOF"))
 
   const setFieldValue = (
     fieldName: keyof MemberDocumentUpdateValues,
@@ -193,7 +211,8 @@ export function MemberDocumentUpdateForm({
         <strong>Upload additional or replacement files.</strong>
         <p>
           Use this section if PNGOSWA requested follow-up documents or if you
-          need to replace a file you already submitted.
+          need to replace a file you already submitted. Missing payment proofs
+          can also be completed here.
         </p>
       </div>
 
@@ -213,11 +232,13 @@ export function MemberDocumentUpdateForm({
 
       <div className="member-doc-grid">
         {documentStatuses.map((document) => {
-          const alreadySubmitted = existingDocumentTypes.includes(document.type)
+          const alreadySubmitted = hasExistingDocument(document.type)
           const hint = alreadySubmitted
             ? "Already uploaded. Add a new file only if you need to replace it."
             : document.required
-              ? "Missing from your application. Please upload it here."
+              ? document.fieldName === "shirtIdPaymentProof"
+                ? "Missing from your application. All members need to upload this payment proof here."
+                : "Missing from your application. Please upload it here."
               : "Optional unless PNGOSWA asks for it."
 
           return (

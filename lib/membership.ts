@@ -4,6 +4,10 @@ import { requestMagicLink } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@/lib/generated/prisma/client"
 import type {
+  MembershipStatus as MembershipStatusValue,
+  ReviewActionType,
+} from "@/lib/generated/prisma/enums"
+import type {
   MembershipApplicationFormValues,
   MembershipUploadedFile,
 } from "@/lib/membership-form"
@@ -19,6 +23,18 @@ import {
 } from "@/lib/uploadthing"
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+export const REGULAR_MEMBERSHIP_WAIVER_LIMIT = 100
+export const REGULAR_MEMBERSHIP_WAIVER_AMOUNT = 500
+export const ID_AND_SHIRT_FEE_AMOUNT = 500
+export const RESERVED_OFFICER_APPLICATION_SLOTS = 10
+export const FIRST_GENERAL_APPLICATION_SEQUENCE =
+  RESERVED_OFFICER_APPLICATION_SLOTS + 1
+const APPLICATION_NUMBER_PAD_LENGTH = 5
+const NO_PROOF_OF_PAYMENT_REVIEW_SUBJECT =
+  "Required payment proof still missing after application submission"
+const PAYMENT_PROOF_RECEIVED_REVIEW_SUBJECT =
+  "Required payment proof uploaded from member profile"
 
 const genderMap = {
   female: "FEMALE",
@@ -42,6 +58,8 @@ const employmentStatusMap = {
 
 const paymentModeMap = {
   gcash: "GCASH",
+  maya: "MAYA",
+  "qr-code": "QR_CODE",
   "bank-transfer": "BANK_TRANSFER",
   cash: "CASH",
   other: "OTHER",
@@ -51,6 +69,12 @@ const membershipTypeMap = {
   regular: "REGULAR",
   lifetime: "LIFETIME",
   honorary: "HONORARY",
+} as const
+
+const paymentCategoryMap = {
+  "waived-free": "WAIVED_FREE_MEMBERSHIP",
+  "regular-annual": "REGULAR_ANNUAL_MEMBERSHIP",
+  "lifetime-no-annual": "LIFETIME_NO_ANNUAL_MEMBERSHIP",
 } as const
 
 const allowedDocumentMimeTypes = new Set([
@@ -87,9 +111,13 @@ type ParsedApplicationInput = {
   otherOrganizations?: string
   membershipType: (typeof membershipTypeMap)[keyof typeof membershipTypeMap]
   paymentMode: (typeof paymentModeMap)[keyof typeof paymentModeMap]
+  paymentCategory: (typeof paymentCategoryMap)[keyof typeof paymentCategoryMap]
   isConventionAttendee: boolean
   agreedToPrivacy: boolean
 }
+
+type PaymentCategoryValue =
+  (typeof paymentCategoryMap)[keyof typeof paymentCategoryMap]
 
 type ParsedLegacyDocuments = {
   resumeUpload: File
@@ -97,7 +125,8 @@ type ParsedLegacyDocuments = {
   prcLicenseUpload?: File
   endorsementUpload?: File
   certificateUpload?: File
-  paymentProof: File
+  membershipPaymentProof?: File
+  shirtIdPaymentProof?: File
   photoUpload: File
 }
 
@@ -107,7 +136,8 @@ type ParsedUploadedDocuments = {
   prcLicenseUpload?: MembershipUploadedFile
   endorsementUpload?: MembershipUploadedFile
   certificateUpload?: MembershipUploadedFile
-  paymentProof: MembershipUploadedFile
+  membershipPaymentProof?: MembershipUploadedFile
+  shirtIdPaymentProof?: MembershipUploadedFile
   photoUpload: MembershipUploadedFile
 }
 
@@ -136,6 +166,8 @@ type MembershipDocumentTypeValue =
   | "ENDORSEMENT"
   | "ATTENDANCE_CERTIFICATE"
   | "PAYMENT_PROOF"
+  | "MEMBERSHIP_PAYMENT_PROOF"
+  | "SHIRT_ID_PAYMENT_PROOF"
   | "ID_PHOTO"
 
 type StoredMembershipDocument = StoredUpload & {
@@ -155,7 +187,8 @@ type MemberDocumentUpdateFieldName =
   | "prcLicenseUpload"
   | "endorsementUpload"
   | "certificateUpload"
-  | "paymentProof"
+  | "membershipPaymentProof"
+  | "shirtIdPaymentProof"
   | "photoUpload"
 
 type MemberDocumentUpdateResult =
@@ -208,9 +241,15 @@ const memberDocumentFieldDefinitions: Array<{
     allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
   },
   {
-    fieldName: "paymentProof",
-    type: "PAYMENT_PROOF",
-    label: "Proof of Payment",
+    fieldName: "membershipPaymentProof",
+    type: "MEMBERSHIP_PAYMENT_PROOF",
+    label: "Membership Fee Proof of Payment",
+    allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
+  },
+  {
+    fieldName: "shirtIdPaymentProof",
+    type: "SHIRT_ID_PAYMENT_PROOF",
+    label: "T-Shirt and ID Proof of Payment",
     allowedMimeTypes: allowedUploadThingDocumentMimeTypes,
   },
   {
@@ -221,9 +260,10 @@ const memberDocumentFieldDefinitions: Array<{
   },
 ]
 
-type MemberDocumentUpdateItem = (typeof memberDocumentFieldDefinitions)[number] & {
-  file: MembershipUploadedFile
-}
+type MemberDocumentUpdateItem =
+  (typeof memberDocumentFieldDefinitions)[number] & {
+    file: MembershipUploadedFile
+  }
 
 function readString(formData: FormData, fieldName: string) {
   const value = formData.get(fieldName)
@@ -544,6 +584,13 @@ function parseSharedValuesFromFormData(formData: FormData):
       membershipTypeMap,
       errors
     )!,
+    paymentCategory: readEnumValue(
+      formData,
+      "paymentCategory",
+      "Membership payment category",
+      paymentCategoryMap,
+      errors
+    )!,
     paymentMode: readEnumValue(
       formData,
       "paymentMode",
@@ -708,6 +755,13 @@ function parseSharedValuesFromPayload(payload: Record<string, unknown>):
       membershipTypeMap,
       errors
     )!,
+    paymentCategory: readPayloadEnumValue(
+      payload,
+      "paymentCategory",
+      "Membership payment category",
+      paymentCategoryMap,
+      errors
+    )!,
     paymentMode: readPayloadEnumValue(
       payload,
       "paymentMode",
@@ -786,13 +840,20 @@ function parseLegacyMembershipApplication(
       errors,
       parsedValues.values.isConventionAttendee
     ),
-    paymentProof: readFile(
+    membershipPaymentProof: readFile(
       formData,
-      "paymentProof",
-      "Proof of payment",
+      "membershipPaymentProof",
+      "Membership fee proof of payment",
       errors,
-      true
-    )!,
+      false
+    ),
+    shirtIdPaymentProof: readFile(
+      formData,
+      "shirtIdPaymentProof",
+      "T-Shirt and ID proof of payment",
+      errors,
+      false
+    ),
     photoUpload: readFile(formData, "photoUpload", "2x2 photo", errors, true)!,
   }
 
@@ -868,14 +929,22 @@ function parseUploadedMembershipApplication(
       parsedValues.values.isConventionAttendee,
       allowedUploadThingDocumentMimeTypes
     ),
-    paymentProof: readUploadedDocument(
+    membershipPaymentProof: readUploadedDocument(
       payload,
-      "paymentProof",
-      "Proof of payment",
+      "membershipPaymentProof",
+      "Membership fee proof of payment",
       errors,
-      true,
+      false,
       allowedUploadThingDocumentMimeTypes
-    )!,
+    ),
+    shirtIdPaymentProof: readUploadedDocument(
+      payload,
+      "shirtIdPaymentProof",
+      "T-Shirt and ID proof of payment",
+      errors,
+      false,
+      allowedUploadThingDocumentMimeTypes
+    ),
     photoUpload: readUploadedDocument(
       payload,
       "photoUpload",
@@ -898,12 +967,117 @@ function parseUploadedMembershipApplication(
   }
 }
 
-function buildApplicationNumber() {
-  const year = new Date().getFullYear()
-  return `PNGOSWA-${year}-${randomUUID().slice(0, 8).toUpperCase()}`
+function buildApplicationNumber(year: number, sequence: number) {
+  return `PNGOSWA-${year}-${String(sequence).padStart(
+    APPLICATION_NUMBER_PAD_LENGTH,
+    "0"
+  )}`
 }
 
-function buildSubmissionFingerprint(parsed: Extract<ParsedMembershipApplication, { ok: true }>) {
+async function allocateApplicationSequence(
+  year: number,
+  kind: "general" | "officer"
+) {
+  if (kind === "officer") {
+    const rows = await prisma.$queryRaw<Array<{ lastOfficerSequence: number }>>`
+      INSERT INTO "ApplicationNumberSequence" (
+        "year",
+        "lastGeneralSequence",
+        "lastOfficerSequence",
+        "updatedAt"
+      )
+      VALUES (
+        ${year},
+        ${FIRST_GENERAL_APPLICATION_SEQUENCE - 1},
+        1,
+        NOW()
+      )
+      ON CONFLICT ("year")
+      DO UPDATE SET
+        "lastOfficerSequence" = "ApplicationNumberSequence"."lastOfficerSequence" + 1,
+        "updatedAt" = NOW()
+      RETURNING "lastOfficerSequence"
+    `
+
+    return rows[0]?.lastOfficerSequence ?? 1
+  }
+
+  const rows = await prisma.$queryRaw<Array<{ lastGeneralSequence: number }>>`
+    INSERT INTO "ApplicationNumberSequence" (
+      "year",
+      "lastGeneralSequence",
+      "lastOfficerSequence",
+      "updatedAt"
+    )
+    VALUES (
+      ${year},
+      ${FIRST_GENERAL_APPLICATION_SEQUENCE},
+      0,
+      NOW()
+    )
+    ON CONFLICT ("year")
+    DO UPDATE SET
+      "lastGeneralSequence" = "ApplicationNumberSequence"."lastGeneralSequence" + 1,
+      "updatedAt" = NOW()
+    RETURNING "lastGeneralSequence"
+  `
+
+  return rows[0]?.lastGeneralSequence ?? FIRST_GENERAL_APPLICATION_SEQUENCE
+}
+
+export async function allocateNextApplicationNumber(year: number) {
+  const sequence = await allocateApplicationSequence(year, "general")
+
+  return buildApplicationNumber(year, sequence)
+}
+
+export async function allocateReservedOfficerApplicationNumber(year: number) {
+  const reservedNumbers = Array.from(
+    { length: RESERVED_OFFICER_APPLICATION_SLOTS },
+    (_, index) => buildApplicationNumber(year, index + 1)
+  )
+  const existingReservedNumbers = await prisma.membershipApplication.findMany({
+    where: {
+      applicationNumber: {
+        in: reservedNumbers,
+      },
+    },
+    select: {
+      applicationNumber: true,
+    },
+  })
+  const usedNumbers = new Set(
+    existingReservedNumbers.map((application) => application.applicationNumber)
+  )
+  const firstAvailableNumber = reservedNumbers.find(
+    (applicationNumber) => !usedNumbers.has(applicationNumber)
+  )
+
+  if (!firstAvailableNumber) {
+    return null
+  }
+
+  const sequenceNumber = Number(firstAvailableNumber.slice(-5))
+  await prisma.applicationNumberSequence.upsert({
+    where: {
+      year,
+    },
+    update: {
+      lastOfficerSequence: Math.max(sequenceNumber, 0),
+    },
+    create: {
+      year,
+      lastGeneralSequence: FIRST_GENERAL_APPLICATION_SEQUENCE - 1,
+      lastOfficerSequence: sequenceNumber,
+    },
+  })
+
+  return firstAvailableNumber
+}
+
+function buildSubmissionFingerprint(
+  parsed: Extract<ParsedMembershipApplication, { ok: true }>
+) {
   const documentSignature =
     parsed.source === "uploadthing"
       ? [
@@ -912,7 +1086,8 @@ function buildSubmissionFingerprint(parsed: Extract<ParsedMembershipApplication,
           parsed.documents.prcLicenseUpload?.key ?? "",
           parsed.documents.endorsementUpload?.key ?? "",
           parsed.documents.certificateUpload?.key ?? "",
-          parsed.documents.paymentProof.key,
+          parsed.documents.membershipPaymentProof?.key ?? "",
+          parsed.documents.shirtIdPaymentProof?.key ?? "",
           parsed.documents.photoUpload.key,
         ]
       : [
@@ -929,13 +1104,19 @@ function buildSubmissionFingerprint(parsed: Extract<ParsedMembershipApplication,
           parsed.documents.certificateUpload
             ? `${parsed.documents.certificateUpload.name}:${parsed.documents.certificateUpload.size}`
             : "",
-          `${parsed.documents.paymentProof.name}:${parsed.documents.paymentProof.size}`,
+          parsed.documents.membershipPaymentProof
+            ? `${parsed.documents.membershipPaymentProof.name}:${parsed.documents.membershipPaymentProof.size}`
+            : "",
+          parsed.documents.shirtIdPaymentProof
+            ? `${parsed.documents.shirtIdPaymentProof.name}:${parsed.documents.shirtIdPaymentProof.size}`
+            : "",
           `${parsed.documents.photoUpload.name}:${parsed.documents.photoUpload.size}`,
         ]
 
   const payload = JSON.stringify({
     email: parsed.values.email,
     membershipType: parsed.values.membershipType,
+    paymentCategory: parsed.values.paymentCategory,
     dateOfBirth: parsed.values.dateOfBirth.toISOString(),
     dateOfRegistration: parsed.values.dateOfRegistration.toISOString(),
     organization: parsed.values.organization,
@@ -1046,10 +1227,113 @@ function toStoredUpload(file: MembershipUploadedFile): StoredUpload {
   }
 }
 
+function requiresMembershipFeeProof(paymentCategory: string | null) {
+  return paymentCategory !== "WAIVED_FREE_MEMBERSHIP"
+}
+
+function getUploadedDocumentTypeSet(application: {
+  documents: Array<{ type: string }>
+}) {
+  return new Set(application.documents.map((document) => document.type))
+}
+
+function hasMembershipFeeProof(uploaded: Set<string>) {
+  return (
+    uploaded.has("PAYMENT_PROOF") || uploaded.has("MEMBERSHIP_PAYMENT_PROOF")
+  )
+}
+
+function hasShirtIdFeeProof(uploaded: Set<string>) {
+  return uploaded.has("PAYMENT_PROOF") || uploaded.has("SHIRT_ID_PAYMENT_PROOF")
+}
+
+export function formatPaymentCategory(category: string) {
+  switch (category) {
+    case "WAIVED_FREE_MEMBERSHIP":
+      return "Waived / Free Membership"
+    case "REGULAR_ANNUAL_MEMBERSHIP":
+      return "Regular (Annual) Membership"
+    case "LIFETIME_NO_ANNUAL_MEMBERSHIP":
+      return "Lifetime (No Annual) Membership"
+    default:
+      return category
+  }
+}
+
+export function getPaymentCategoryAmountLabel(category: string) {
+  switch (category) {
+    case "WAIVED_FREE_MEMBERSHIP":
+      return "PHP 0"
+    case "REGULAR_ANNUAL_MEMBERSHIP":
+      return "PHP 500"
+    case "LIFETIME_NO_ANNUAL_MEMBERSHIP":
+      return "PHP 3,000"
+    default:
+      return category
+  }
+}
+
+export function getApplicationPaymentProofStatus(application: {
+  paymentCategory: string | null
+  documents: Array<{ type: string }>
+}) {
+  const uploaded = getUploadedDocumentTypeSet(application)
+  const membershipProofRequired = requiresMembershipFeeProof(
+    application.paymentCategory
+  )
+  const membershipProofReceived = membershipProofRequired
+    ? hasMembershipFeeProof(uploaded)
+    : true
+  const shirtIdProofReceived = hasShirtIdFeeProof(uploaded)
+
+  return {
+    membershipProofRequired,
+    membershipProofReceived,
+    shirtIdProofReceived,
+    isComplete: membershipProofReceived && shirtIdProofReceived,
+  }
+}
+
+function buildMissingPaymentProofMessage(application: {
+  paymentCategory: string | null
+  documents: Array<{ type: string }>
+}) {
+  const paymentStatus = getApplicationPaymentProofStatus(application)
+  const missingLabels: string[] = []
+
+  if (
+    paymentStatus.membershipProofRequired &&
+    !paymentStatus.membershipProofReceived
+  ) {
+    missingLabels.push("membership fee proof")
+  }
+
+  if (!paymentStatus.shirtIdProofReceived) {
+    missingLabels.push("T-Shirt and ID proof")
+  }
+
+  if (missingLabels.length === 0) {
+    return "All required payment proofs have been uploaded."
+  }
+
+  return `Missing ${missingLabels.join(" and ")}.`
+}
+
+function getApplicationSubmissionStatus(input: {
+  paymentCategory: PaymentCategoryValue
+  documents: Array<{ type: string }>
+}): MembershipStatusValue {
+  return getApplicationPaymentProofStatus(input).isComplete
+    ? "PENDING"
+    : "NO_PROOF_OF_PAYMENT"
+}
+
 export function formatMembershipStatus(status: string) {
   switch (status) {
     case "PENDING":
       return "Pending Review"
+    case "NO_PROOF_OF_PAYMENT":
+      return "No Proof of Payment"
     case "FOLLOW_UP":
       return "Follow Up Needed"
     case "APPROVED":
@@ -1060,8 +1344,6 @@ export function formatMembershipStatus(status: string) {
       return status
   }
 }
-
-export const REGULAR_MEMBERSHIP_WAIVER_LIMIT = 500
 
 export type MembershipCommunityStats = {
   approvedMembers: number
@@ -1135,6 +1417,10 @@ export function formatPaymentMode(mode: string) {
       return "Bank Transfer"
     case "GCASH":
       return "GCash"
+    case "MAYA":
+      return "Maya"
+    case "QR_CODE":
+      return "QR Code"
     default:
       return mode.charAt(0) + mode.slice(1).toLowerCase()
   }
@@ -1144,6 +1430,7 @@ export function getStatusTone(status: string) {
   switch (status) {
     case "APPROVED":
       return "success"
+    case "NO_PROOF_OF_PAYMENT":
     case "FOLLOW_UP":
       return "warning"
     case "REJECTED":
@@ -1155,13 +1442,13 @@ export function getStatusTone(status: string) {
 
 export function getApplicationRequirementChecklist(application: {
   membershipType: string
+  paymentCategory: string | null
   prcLicense: string | null
   isConventionAttendee: boolean
   documents: Array<{ type: string }>
 }) {
-  const uploaded = new Set(
-    application.documents.map((document) => document.type)
-  )
+  const uploaded = getUploadedDocumentTypeSet(application)
+  const paymentStatus = getApplicationPaymentProofStatus(application)
 
   return [
     {
@@ -1187,8 +1474,13 @@ export function getApplicationRequirementChecklist(application: {
         uploaded.has("ATTENDANCE_CERTIFICATE"),
     },
     {
-      label: "Proof of payment",
-      satisfied: uploaded.has("PAYMENT_PROOF"),
+      label: `${formatPaymentCategory(application.paymentCategory ?? "WAIVED_FREE_MEMBERSHIP")} payment proof`,
+      satisfied: paymentStatus.membershipProofReceived,
+      optional: !paymentStatus.membershipProofRequired,
+    },
+    {
+      label: "T-Shirt and ID payment proof",
+      satisfied: paymentStatus.shirtIdProofReceived,
     },
     {
       label: "2x2 ID photo",
@@ -1340,13 +1632,46 @@ export async function updateMembershipApplicationDocumentsForMember(
   const documentMap = new Map(
     application.documents.map((document) => [document.type, document])
   )
+  const uploadedPaymentProof = updates.some(
+    (update) =>
+      update.type === "PAYMENT_PROOF" ||
+      update.type === "MEMBERSHIP_PAYMENT_PROOF" ||
+      update.type === "SHIRT_ID_PAYMENT_PROOF"
+  )
+  const expectedDocumentTypes = new Set(
+    application.documents.map((document) => document.type)
+  )
+
+  for (const update of updates) {
+    expectedDocumentTypes.add(update.type)
+  }
+
+  if (updates.some((update) => update.type === "PAYMENT_PROOF")) {
+    expectedDocumentTypes.add("MEMBERSHIP_PAYMENT_PROOF")
+    expectedDocumentTypes.add("SHIRT_ID_PAYMENT_PROOF")
+  }
+
+  const shouldMoveBackToPending =
+    application.status === "NO_PROOF_OF_PAYMENT" &&
+    uploadedPaymentProof &&
+    getApplicationPaymentProofStatus({
+      paymentCategory: application.paymentCategory,
+      documents: Array.from(expectedDocumentTypes, (type) => ({ type })),
+    }).isComplete
+  const stillMissingPaymentProof =
+    application.status === "NO_PROOF_OF_PAYMENT" &&
+    uploadedPaymentProof &&
+    !shouldMoveBackToPending
 
   try {
     await prisma.$transaction([
       ...updates.map((update) => {
         const existingDocument = documentMap.get(update.type)
 
-        if (existingDocument && existingDocument.storedName !== update.file.key) {
+        if (
+          existingDocument &&
+          existingDocument.storedName !== update.file.key
+        ) {
           replacedKeys.push(existingDocument.storedName)
         }
 
@@ -1384,9 +1709,30 @@ export async function updateMembershipApplicationDocumentsForMember(
           id: application.id,
         },
         data: {
+          ...(shouldMoveBackToPending
+            ? {
+                status: "PENDING",
+                followUpMessage: null,
+                lastFollowUpSentAt: null,
+              }
+            : {}),
           reviewSummary: application.reviewSummary ?? null,
         },
       }),
+      ...(shouldMoveBackToPending
+        ? [
+            prisma.membershipReviewAction.create({
+              data: {
+                applicationId: application.id,
+                reviewerId: null,
+                type: "SUBMITTED",
+                subject: PAYMENT_PROOF_RECEIVED_REVIEW_SUBJECT,
+                message:
+                  "Member uploaded the remaining required payment proof from the profile page. The application has been returned to pending review.",
+              },
+            }),
+          ]
+        : []),
     ])
   } catch (error) {
     if (uploadedKeys.length > 0) {
@@ -1416,10 +1762,13 @@ export async function updateMembershipApplicationDocumentsForMember(
 
   return {
     ok: true,
-    message:
-      updates.length === 1
-        ? "Your document has been saved to your membership profile."
-        : "Your updated documents have been saved to your membership profile.",
+    message: shouldMoveBackToPending
+      ? "Your required payment proof has been saved. Your application is back in the pending review queue."
+      : stillMissingPaymentProof
+        ? "Your upload has been saved, but your application still needs the remaining required payment proof or proofs."
+        : updates.length === 1
+          ? "Your document has been saved to your membership profile."
+          : "Your updated documents have been saved to your membership profile.",
     updatedDocuments: updates.map((update) => update.label),
   }
 }
@@ -1454,7 +1803,9 @@ export async function createMembershipApplication(input: FormData | unknown) {
   }
 
   const applicationId = randomUUID()
-  const applicationNumber = buildApplicationNumber()
+  const applicationNumber = await allocateNextApplicationNumber(
+    new Date().getFullYear()
+  )
   const fullName = getFullName(parsed.values)
 
   const user = await prisma.user.upsert({
@@ -1472,8 +1823,33 @@ export async function createMembershipApplication(input: FormData | unknown) {
   })
 
   const storedDocuments: StoredMembershipDocument[] = []
+  const submissionReviewActions: Array<{
+    reviewerId: string | null
+    type: ReviewActionType
+    subject: string
+    message: string
+  }> = [
+    {
+      reviewerId: null,
+      type: "SUBMITTED",
+      subject: "Application submitted",
+      message: "Member submitted a new membership application.",
+    },
+  ]
 
   try {
+    const applicationStatus = getApplicationSubmissionStatus({
+      paymentCategory: parsed.values.paymentCategory,
+      documents: [
+        ...(parsed.documents.membershipPaymentProof
+          ? [{ type: "MEMBERSHIP_PAYMENT_PROOF" as const }]
+          : []),
+        ...(parsed.documents.shirtIdPaymentProof
+          ? [{ type: "SHIRT_ID_PAYMENT_PROOF" as const }]
+          : []),
+      ],
+    })
+
     if (parsed.source === "legacy") {
       storedDocuments.push({
         ...(await saveUploadedFile({
@@ -1533,15 +1909,29 @@ export async function createMembershipApplication(input: FormData | unknown) {
         })
       }
 
-      storedDocuments.push({
-        ...(await saveUploadedFile({
-          applicationId,
-          file: parsed.documents.paymentProof,
-          prefix: "payment-proof",
-        })),
-        type: "PAYMENT_PROOF",
-        label: "Proof of Payment",
-      })
+      if (parsed.documents.membershipPaymentProof) {
+        storedDocuments.push({
+          ...(await saveUploadedFile({
+            applicationId,
+            file: parsed.documents.membershipPaymentProof,
+            prefix: "membership-payment-proof",
+          })),
+          type: "MEMBERSHIP_PAYMENT_PROOF",
+          label: "Membership Fee Proof of Payment",
+        })
+      }
+
+      if (parsed.documents.shirtIdPaymentProof) {
+        storedDocuments.push({
+          ...(await saveUploadedFile({
+            applicationId,
+            file: parsed.documents.shirtIdPaymentProof,
+            prefix: "shirt-id-payment-proof",
+          })),
+          type: "SHIRT_ID_PAYMENT_PROOF",
+          label: "T-Shirt and ID Proof of Payment",
+        })
+      }
 
       storedDocuments.push({
         ...(await saveUploadedFile({
@@ -1591,16 +1981,40 @@ export async function createMembershipApplication(input: FormData | unknown) {
         })
       }
 
-      storedDocuments.push({
-        ...toStoredUpload(parsed.documents.paymentProof),
-        type: "PAYMENT_PROOF",
-        label: "Proof of Payment",
-      })
+      if (parsed.documents.membershipPaymentProof) {
+        storedDocuments.push({
+          ...toStoredUpload(parsed.documents.membershipPaymentProof),
+          type: "MEMBERSHIP_PAYMENT_PROOF",
+          label: "Membership Fee Proof of Payment",
+        })
+      }
+
+      if (parsed.documents.shirtIdPaymentProof) {
+        storedDocuments.push({
+          ...toStoredUpload(parsed.documents.shirtIdPaymentProof),
+          type: "SHIRT_ID_PAYMENT_PROOF",
+          label: "T-Shirt and ID Proof of Payment",
+        })
+      }
 
       storedDocuments.push({
         ...toStoredUpload(parsed.documents.photoUpload),
         type: "ID_PHOTO",
         label: "2x2 ID Photo",
+      })
+    }
+
+    if (applicationStatus === "NO_PROOF_OF_PAYMENT") {
+      submissionReviewActions.push({
+        reviewerId: null,
+        type: "SUBMITTED",
+        subject: NO_PROOF_OF_PAYMENT_REVIEW_SUBJECT,
+        message: `${buildMissingPaymentProofMessage({
+          paymentCategory: parsed.values.paymentCategory,
+          documents: storedDocuments.map((document) => ({
+            type: document.type,
+          })),
+        })} The member can still upload the missing payment proof or proofs later from the member profile page.`,
       })
     }
 
@@ -1610,18 +2024,13 @@ export async function createMembershipApplication(input: FormData | unknown) {
         applicationNumber,
         submissionFingerprint,
         userId: user.id,
-        status: "PENDING",
+        status: applicationStatus,
         ...parsed.values,
         documents: {
           create: storedDocuments,
         },
         reviewActions: {
-          create: {
-            reviewerId: null,
-            type: "SUBMITTED",
-            subject: "Application submitted",
-            message: "Member submitted a new membership application.",
-          },
+          create: submissionReviewActions,
         },
       },
     })

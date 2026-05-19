@@ -15,7 +15,7 @@ import {
 } from "@/lib/email"
 import { getSiteUrl } from "@/lib/site-url"
 
-type PortalScope = "ADMIN" | "MEMBER"
+export type PortalScope = "ADMIN" | "MEMBER"
 
 type RequestMagicLinkInput = {
   email: string
@@ -24,6 +24,20 @@ type RequestMagicLinkInput = {
   userId?: string
   recipientName?: string
 }
+
+type RequestMagicLinkResult =
+  | {
+      ok: true
+      emailSent: boolean
+      message: string
+      debugUrl: string | undefined
+      submittedEmail: string
+      expiresInMinutes: number
+    }
+  | {
+      ok: false
+      message: string
+    }
 
 type PortalSession = {
   user: {
@@ -89,6 +103,14 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex")
 }
 
+export function parsePortalScope(rawScope: string | null): PortalScope | null {
+  return rawScope === "admin"
+    ? "ADMIN"
+    : rawScope === "member"
+      ? "MEMBER"
+      : null
+}
+
 function getPortalCookieDomain() {
   if (process.env.NODE_ENV !== "production") {
     return undefined
@@ -115,7 +137,8 @@ function buildPortalCookieOptions(expiresAt: Date) {
     expires: expiresAt,
     httpOnly: true,
     path: "/",
-    sameSite: "strict" as const,
+    priority: "high" as const,
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
   }
 }
@@ -127,8 +150,10 @@ function buildExpiredPortalCookieOptions() {
     ...(domain ? { domain } : {}),
     expires: new Date(0),
     httpOnly: true,
+    maxAge: 0,
     path: "/",
-    sameSite: "strict" as const,
+    priority: "high" as const,
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
   }
 }
@@ -140,8 +165,6 @@ async function clearPortalSessionCookie(scope: PortalScope) {
   cookieStore.set(portalConfig[scope].cookieName, "", {
     ...expiredOptions,
   })
-
-  cookieStore.delete(portalConfig[scope].cookieName)
 }
 
 export function isDevelopmentAuthBypassEnabled() {
@@ -257,7 +280,68 @@ export function getPortalLoginPath(scope: PortalScope) {
   return portalConfig[scope].loginPath
 }
 
-export async function requestMagicLink(input: RequestMagicLinkInput) {
+export function getPortalRedirectPath(scope: PortalScope) {
+  return portalConfig[scope].redirectPath
+}
+
+export async function previewMagicLink(rawToken: string, scope: PortalScope) {
+  try {
+    const tokenHash = hashToken(rawToken)
+    const magicLink = await prisma.magicLinkToken.findUnique({
+      where: {
+        tokenHash,
+      },
+      select: {
+        scope: true,
+        expiresAt: true,
+        usedAt: true,
+        userId: true,
+      },
+    })
+
+    if (!magicLink || magicLink.scope !== scope || !magicLink.userId) {
+      return {
+        ok: false as const,
+        status: "invalid" as const,
+      }
+    }
+
+    if (magicLink.usedAt) {
+      return {
+        ok: false as const,
+        status: "used" as const,
+      }
+    }
+
+    if (magicLink.expiresAt <= new Date()) {
+      return {
+        ok: false as const,
+        status: "expired" as const,
+      }
+    }
+
+    return {
+      ok: true as const,
+      expiresInMinutes: Math.max(
+        Math.ceil((magicLink.expiresAt.getTime() - Date.now()) / 60000),
+        1
+      ),
+    }
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      return {
+        ok: false as const,
+        status: "unavailable" as const,
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function requestMagicLink(
+  input: RequestMagicLinkInput
+): Promise<RequestMagicLinkResult> {
   try {
     const email = normalizeEmail(input.email)
     const config = portalConfig[input.scope]
@@ -276,6 +360,8 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
         emailSent: false,
         message: config.genericSuccessMessage,
         debugUrl: undefined,
+        submittedEmail: email,
+        expiresInMinutes: MAGIC_LINK_TTL_MINUTES,
       }
     }
 
@@ -350,6 +436,8 @@ export async function requestMagicLink(input: RequestMagicLinkInput) {
       emailSent: true,
       message: "A secure sign-in link has been sent to your email.",
       debugUrl: undefined,
+      submittedEmail: email,
+      expiresInMinutes: MAGIC_LINK_TTL_MINUTES,
     }
   } catch (error) {
     if (isDatabaseConnectionError(error)) {
@@ -400,50 +488,42 @@ export async function signInForDevelopment(
 }
 
 export async function consumeMagicLink(rawToken: string, scope: PortalScope) {
-  try {
-    const tokenHash = hashToken(rawToken)
-    const magicLink = await prisma.magicLinkToken.findFirst({
-      where: {
-        tokenHash,
-        scope,
-        usedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
+  const tokenHash = hashToken(rawToken)
+  const magicLink = await prisma.magicLinkToken.findFirst({
+    where: {
+      tokenHash,
+      scope,
+      usedAt: null,
+      expiresAt: {
+        gt: new Date(),
       },
-      orderBy: {
-        createdAt: "desc",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      user: true,
+    },
+  })
+
+  if (!magicLink || !magicLink.user) {
+    return null
+  }
+  const session = await createPortalSessionRecord(scope, magicLink.user.id)
+
+  await prisma.$transaction([
+    prisma.magicLinkToken.update({
+      where: { id: magicLink.id },
+      data: {
+        usedAt: new Date(),
       },
-      include: {
-        user: true,
-      },
-    })
+    }),
+  ])
 
-    if (!magicLink || !magicLink.user) {
-      return null
-    }
-    const session = await createPortalSessionRecord(scope, magicLink.user.id)
-
-    await prisma.$transaction([
-      prisma.magicLinkToken.update({
-        where: { id: magicLink.id },
-        data: {
-          usedAt: new Date(),
-        },
-      }),
-    ])
-
-    return {
-      redirectPath: magicLink.redirectPath,
-      rawSessionToken: session.rawSessionToken,
-      expiresAt: session.expiresAt,
-    }
-  } catch (error) {
-    if (isDatabaseConnectionError(error)) {
-      return null
-    }
-
-    throw error
+  return {
+    redirectPath: magicLink.redirectPath,
+    rawSessionToken: session.rawSessionToken,
+    expiresAt: session.expiresAt,
   }
 }
 
@@ -452,8 +532,6 @@ export async function setPortalSessionCookie(
   rawSessionToken: string,
   expiresAt: Date
 ) {
-  await clearPortalSessionCookie(scope)
-
   const cookieStore = await cookies()
 
   cookieStore.set(

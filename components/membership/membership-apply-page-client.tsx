@@ -1,12 +1,22 @@
 "use client"
 
+import type { MembershipCommunityStats } from "@/lib/membership"
+import type { PublicPaymentSettings } from "@/lib/payment-settings"
 import {
   ApplicationFormSection,
   MembershipFooter,
   MembershipNavbar,
 } from "@/components/membership"
 
-export function MembershipApplyPageClient() {
+type MembershipApplyPageClientProps = {
+  paymentSettings: PublicPaymentSettings
+  communityStats: MembershipCommunityStats
+}
+
+export function MembershipApplyPageClient({
+  paymentSettings,
+  communityStats,
+}: MembershipApplyPageClientProps) {
   return (
     <>
       <MembershipNavbar />
@@ -44,7 +54,10 @@ export function MembershipApplyPageClient() {
           </div>
           <div className="gradient-bar" />
         </section>
-        <ApplicationFormSection />
+        <ApplicationFormSection
+          paymentSettings={paymentSettings}
+          communityStats={communityStats}
+        />
       </main>
       <MembershipFooter />
     </>

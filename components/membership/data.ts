@@ -24,9 +24,9 @@ export const categories: MembershipCategory[] = [
     badge: "Most Popular",
     badgeBg: "var(--navy)",
     accent: "var(--navy)",
-    fee: "Free for first 500 approved members",
+    fee: "Free for first 100 approved members",
     feeNote:
-      "Regular membership fee is waived during the first 500-member allocation. Only the required ID and shirt payment still applies.",
+      "Regular membership fee worth PHP 500 is waived during the first 100-member allocation. The required PHP 500 T-Shirt and ID payment still applies.",
     annual: "PHP 500 / year upon renewal",
     eligibility: [
       "Licensed social workers (RSw)",
@@ -55,7 +55,7 @@ export const categories: MembershipCategory[] = [
     badgeBg: "var(--amber)",
     accent: "var(--amber)",
     fee: "PHP 3,000",
-    feeNote: "one-time (covers ID & shirt)",
+    feeNote: "one-time membership payment only. A separate PHP 500 T-Shirt and ID payment still applies.",
     annual: "No annual dues",
     eligibility: [
       "Management-level social workers (supervisors, coordinators, managers, directors)",
@@ -123,8 +123,7 @@ export const membershipTypeOptions: MembershipTypeOption[] = [
   {
     value: "regular",
     label: "Regular Member",
-    desc:
-      "Licensed RSw with NGO experience - first 500 approved members are free, then PHP 500/year on renewal",
+    desc: "Licensed RSw with NGO experience - first 100 approved members are free, then PHP 500/year on renewal",
   },
   {
     value: "lifetime",

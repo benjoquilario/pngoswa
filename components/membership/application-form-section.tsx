@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import {
   Controller,
@@ -10,11 +10,13 @@ import {
   type Path,
 } from "react-hook-form"
 
+import type { MembershipCommunityStats } from "@/lib/membership"
 import type {
   MembershipApplicationFormValues,
   MembershipApplicationSuccess,
 } from "@/lib/membership-form"
 import { membershipFormDefaults } from "@/lib/membership-form"
+import type { PublicPaymentSettings } from "@/lib/payment-settings"
 import {
   ChoiceCard,
   Field,
@@ -56,7 +58,15 @@ function collectErrorMessages(
     .filter((message): message is string => typeof message === "string")
 }
 
-export function ApplicationFormSection() {
+type ApplicationFormSectionProps = {
+  paymentSettings: PublicPaymentSettings
+  communityStats: MembershipCommunityStats
+}
+
+export function ApplicationFormSection({
+  paymentSettings,
+  communityStats,
+}: ApplicationFormSectionProps) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] =
     useState<MembershipApplicationSuccess | null>(null)
@@ -65,7 +75,10 @@ export function ApplicationFormSection() {
     applicationNumber?: string
     loginPath?: string
   } | null>(null)
+  const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false)
   const submitLockRef = useRef(false)
+  const qrTriggerButtonRef = useRef<HTMLButtonElement | null>(null)
+  const qrCloseButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const {
     control,
@@ -73,18 +86,69 @@ export function ApplicationFormSection() {
     register,
     reset,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<MembershipApplicationFormValues>({
     defaultValues: membershipFormDefaults,
   })
 
   const membershipType = useWatch({ control, name: "membershipType" })
+  const paymentMode = useWatch({ control, name: "paymentMode" })
+  const paymentCategory = useWatch({ control, name: "paymentCategory" })
   const isConventionAttendee = useWatch({
     control,
     name: "isConventionAttendee",
   })
   const agreed = useWatch({ control, name: "agreed" })
   const validationMessages = collectErrorMessages(errors)
+  const freeRegularMembershipFilled =
+    communityStats.freeRegularMembershipRemaining <= 0
+  const showDigitalPaymentDetails =
+    paymentMode === "gcash" ||
+    paymentMode === "maya" ||
+    paymentMode === "qr-code"
+  const walletNumber =
+    paymentMode === "gcash"
+      ? paymentSettings.gcashNumber
+      : paymentMode === "maya"
+        ? paymentSettings.mayaNumber
+        : ""
+  const qrPreviewImageUrl =
+    paymentMode === "qr-code"
+      ? "/qrcode.jpg"
+      : (paymentSettings.qrCode?.ufsUrl ?? null)
+
+  useEffect(() => {
+    if (isConventionAttendee === "no") {
+      setValue("certificateUpload", null, { shouldValidate: true })
+    }
+  }, [isConventionAttendee, setValue])
+
+  useEffect(() => {
+    if (paymentCategory === "waived-free") {
+      setValue("membershipPaymentProof", null, { shouldValidate: true })
+    }
+  }, [paymentCategory, setValue])
+
+  useEffect(() => {
+    if (!isQrPreviewOpen) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsQrPreviewOpen(false)
+        qrTriggerButtonRef.current?.focus()
+      }
+    }
+
+    qrCloseButtonRef.current?.focus()
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isQrPreviewOpen])
 
   const onSubmit = handleSubmit(async (values) => {
     if (submitLockRef.current) {
@@ -176,7 +240,8 @@ export function ApplicationFormSection() {
               <p>{duplicateNotice.message}</p>
               {duplicateNotice.applicationNumber ? (
                 <p>
-                  Saved reference: <strong>{duplicateNotice.applicationNumber}</strong>
+                  Saved reference:{" "}
+                  <strong>{duplicateNotice.applicationNumber}</strong>
                 </p>
               ) : null}
             </div>
@@ -790,8 +855,8 @@ export function ApplicationFormSection() {
             <legend className="form-legend">6. Payment</legend>
             <div className="form-notice">
               <strong>Notice:</strong> Membership fee is waived for convention
-              attendees. Only ID and T-shirt fees are required. Please upload
-              your certificate.
+              attendees. Only the PHP 500 ID and T-shirt fee is required. Please
+              upload your certificate.
             </div>
             <Controller
               name="isConventionAttendee"
@@ -831,6 +896,23 @@ export function ApplicationFormSection() {
                 </>
               )}
             />
+            {isConventionAttendee === "yes" ? (
+              <div className="form-notice payment-step-notice">
+                <strong>Certificate upload instruction:</strong> Upload your
+                convention certificate here if you want to support a waived or
+                free membership selection. The PHP 500 T-Shirt and ID payment
+                still applies to all members.
+              </div>
+            ) : isConventionAttendee === "no" ? (
+              <div className="form-notice payment-step-notice">
+                <strong>Payment instruction:</strong> Choose the correct
+                membership payment category below, then upload the needed proof
+                of payment now or later from your member profile.{" "}
+                {freeRegularMembershipFilled
+                  ? "The first 100 approved regular-member slots are already filled, so regular applicants now pay PHP 500 annual membership fee plus PHP 500 for the T-Shirt and ID."
+                  : "Regular membership is still waived for the first 100 approved members, so many regular applicants will only need the PHP 500 T-Shirt and ID payment right now."}
+              </div>
+            ) : null}
             <div className="form-row">
               <Controller
                 name="certificateUpload"
@@ -845,6 +927,11 @@ export function ApplicationFormSection() {
                   <UploadInput
                     id="certificateUpload"
                     label="Certificate of Participation / Attendance"
+                    hint={
+                      isConventionAttendee === "yes"
+                        ? "Upload your certificate to confirm the membership-fee waiver. PDF, JPG, or PNG only."
+                        : "Only needed if you selected Convention Attendee with Certificate."
+                    }
                     required={isConventionAttendee === "yes"}
                     accept=".pdf,.jpg,.jpeg,.png"
                     allowedText="PDF, JPG, or PNG up to 8MB"
@@ -852,22 +939,71 @@ export function ApplicationFormSection() {
                     value={field.value}
                     onChange={field.onChange}
                     error={fieldState.error?.message}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isConventionAttendee === "no"}
+                  />
+                )}
+              />
+              <Field
+                htmlFor="paymentCategory"
+                label="Membership Payment Category"
+                required
+                error={errors.paymentCategory?.message}
+              >
+                <Select
+                  id="paymentCategory"
+                  invalid={!!errors.paymentCategory}
+                  {...register("paymentCategory", {
+                    required: "Membership payment category is required.",
+                  })}
+                >
+                  <option value="">Select membership payment category</option>
+                  <option value="waived-free">
+                    0 - Waived / Free Membership
+                  </option>
+                  <option value="regular-annual">
+                    500 - Regular (Annual) Membership
+                  </option>
+                  <option value="lifetime-no-annual">
+                    3000 - Lifetime (No Annual) Member
+                  </option>
+                </Select>
+              </Field>
+            </div>
+            <div className="form-row">
+              <Controller
+                name="membershipPaymentProof"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <UploadInput
+                    id="membershipPaymentProof"
+                    label="Membership Fee Proof of Payment"
+                    hint={
+                      paymentCategory === "waived-free"
+                        ? "Not required for waived or free membership selections."
+                        : paymentCategory === "lifetime-no-annual"
+                          ? "Upload proof for the PHP 3,000 lifetime membership fee now or later from your member profile."
+                          : "Upload proof for the PHP 500 regular annual membership fee now or later from your member profile."
+                    }
+                    required={false}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    allowedText="PDF, JPG, or PNG up to 8MB"
+                    endpoint="membershipDocument"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    disabled={isSubmitting || paymentCategory === "waived-free"}
                   />
                 )}
               />
               <Controller
-                name="paymentProof"
+                name="shirtIdPaymentProof"
                 control={control}
-                rules={{
-                  validate: (value) =>
-                    !!value || "Proof of payment is required.",
-                }}
                 render={({ field, fieldState }) => (
                   <UploadInput
-                    id="paymentProof"
-                    label="Proof of Payment"
-                    required
+                    id="shirtIdPaymentProof"
+                    label="T-Shirt and ID Proof of Payment (PHP 500)"
+                    hint="All members, including convention attendees, still need the PHP 500 T-Shirt and ID payment and can upload this proof later from the member profile."
+                    required={false}
                     accept=".pdf,.jpg,.jpeg,.png"
                     allowedText="PDF, JPG, or PNG up to 8MB"
                     endpoint="membershipDocument"
@@ -894,12 +1030,120 @@ export function ApplicationFormSection() {
               >
                 <option value="">Select payment mode</option>
                 <option value="gcash">GCash</option>
+                <option value="maya">Maya</option>
+                <option value="qr-code">QR Code</option>
                 <option value="bank-transfer">Bank Transfer</option>
                 <option value="cash">Cash</option>
                 <option value="other">Other</option>
               </Select>
             </Field>
+            <div className="form-notice payment-step-notice payment-step-notice-strong">
+              <strong>Payment guide:</strong>{" "}
+              {paymentCategory === "lifetime-no-annual"
+                ? "Lifetime applicants pay PHP 3,000 for membership plus PHP 500 for the T-Shirt and ID."
+                : paymentCategory === "regular-annual"
+                  ? "Regular annual applicants pay PHP 500 membership fee plus PHP 500 for the T-Shirt and ID."
+                  : isConventionAttendee === "yes"
+                    ? "Convention attendees may use waived or free membership, but they still need the PHP 500 T-Shirt and ID payment."
+                    : freeRegularMembershipFilled
+                      ? "The free first-100 allocation is already full, so regular applicants should choose the PHP 500 annual membership option plus the PHP 500 T-Shirt and ID payment."
+                      : `The first ${communityStats.freeRegularMembershipLimit} approved regular members may use the waived or free membership option, but they still need the PHP 500 T-Shirt and ID payment.`}{" "}
+              You can still submit without the payment proofs, but the
+              application will stay marked as no proof of payment until the
+              missing uploads are added from the member profile.
+            </div>
+            {showDigitalPaymentDetails ? (
+              <div className="payment-config-card">
+                <div>
+                  <p className="payment-config-label">
+                    {paymentMode === "gcash"
+                      ? "GCash Number"
+                      : paymentMode === "maya"
+                        ? "Maya Number"
+                        : "Official QR Code Payment"}
+                  </p>
+                  {paymentMode === "qr-code" ? (
+                    <strong className="payment-config-value">
+                      Scan the official PNGOSWA QR code below to pay.
+                    </strong>
+                  ) : (
+                    <strong className="payment-config-value">
+                      {walletNumber ||
+                        "Not configured yet in the admin dashboard."}
+                    </strong>
+                  )}
+                </div>
+                {qrPreviewImageUrl ? (
+                  <div className="payment-config-qr">
+                    <button
+                      ref={qrTriggerButtonRef}
+                      type="button"
+                      className="payment-config-qr-trigger"
+                      onClick={() => setIsQrPreviewOpen(true)}
+                      aria-label="Open payment QR code in full size"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={qrPreviewImageUrl}
+                        alt="Digital payment QR code"
+                      />
+                    </button>
+                    <span>
+                      {paymentMode === "qr-code"
+                        ? "Use this official PNGOSWA QR image for payment. Tap the QR image to enlarge it."
+                        : "Scan the QR code for supported e-wallet payments. Tap the QR image to enlarge it."}
+                    </span>
+                  </div>
+                ) : null}
+                <p className="payment-privacy-note">
+                  {paymentSettings.privacyMessage}
+                </p>
+              </div>
+            ) : (
+              <p className="payment-privacy-note">
+                {paymentSettings.privacyMessage}
+              </p>
+            )}
           </fieldset>
+
+          {isQrPreviewOpen && qrPreviewImageUrl ? (
+            <div
+              className="lightbox-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Payment QR code viewer"
+              onClick={() => {
+                setIsQrPreviewOpen(false)
+                qrTriggerButtonRef.current?.focus()
+              }}
+            >
+              <button
+                ref={qrCloseButtonRef}
+                type="button"
+                className="lightbox-close"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setIsQrPreviewOpen(false)
+                  qrTriggerButtonRef.current?.focus()
+                }}
+                aria-label="Close payment QR code viewer"
+              >
+                Close
+              </button>
+
+              <div
+                className="lightbox-frame payment-qr-lightbox-frame"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrPreviewImageUrl}
+                  alt="Payment QR code enlarged preview"
+                  className="lightbox-img payment-qr-lightbox-img"
+                />
+              </div>
+            </div>
+          ) : null}
 
           <fieldset className="form-fieldset">
             <legend className="form-legend">7. ID Information</legend>

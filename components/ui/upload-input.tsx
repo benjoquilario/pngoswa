@@ -15,7 +15,7 @@ type UploadInputProps = {
   error?: string
   required?: boolean
   disabled?: boolean
-  endpoint: "membershipDocument" | "membershipPhoto"
+  endpoint: "membershipDocument" | "membershipPhoto" | "paymentQrCode"
   accept: string
   allowedText: string
   value: MembershipUploadedFile | null

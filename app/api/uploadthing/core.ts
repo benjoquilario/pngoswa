@@ -33,6 +33,19 @@ export const uploadRouter = {
       key: file.key,
       ufsUrl: file.ufsUrl,
     })),
+  paymentQrCode: f({
+    image: {
+      maxFileSize: "8MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(() => ({
+      source: "admin-payment-settings",
+    }))
+    .onUploadComplete(async ({ file }) => ({
+      key: file.key,
+      ufsUrl: file.ufsUrl,
+    })),
 } satisfies FileRouter
 
 export type UploadRouter = typeof uploadRouter

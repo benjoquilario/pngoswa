@@ -2,11 +2,17 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { reviewMembershipAction } from "@/app/admin/actions"
+import { ReviewMembershipActionForm } from "@/components/admin/review-membership-action-form"
 import { StatusBadge } from "@/components/portal/status-badge"
+import { requirePortalSession } from "@/lib/auth"
+import { isPresidentAdminEmail } from "@/lib/auth/admin-access"
 import { prisma } from "@/lib/db"
+import { formatOfficerRoleName } from "@/lib/officer-roles"
 import {
+  formatPaymentCategory,
   formatMembershipType,
   formatPaymentMode,
+  getApplicationPaymentProofStatus,
   getApplicationRequirementChecklist,
 } from "@/lib/membership"
 
@@ -19,8 +25,10 @@ export default async function ApplicationDetailPage({
   params,
   searchParams,
 }: ApplicationDetailPageProps) {
+  const session = await requirePortalSession("ADMIN")
   const { id } = await params
   const query = await searchParams
+  const canAssignOfficerRole = isPresidentAdminEmail(session.user.email)
   const application = await prisma.membershipApplication.findUnique({
     where: {
       id,
@@ -47,6 +55,7 @@ export default async function ApplicationDetailPage({
   }
 
   const checklist = getApplicationRequirementChecklist(application)
+  const paymentProofStatus = getApplicationPaymentProofStatus(application)
 
   return (
     <div className="dashboard-content">
@@ -74,6 +83,27 @@ export default async function ApplicationDetailPage({
         </div>
       ) : null}
 
+      {application.status === "NO_PROOF_OF_PAYMENT" ? (
+        <div className="form-feedback form-feedback-warning">
+          <strong>No proof of payment yet</strong>
+          <p>
+            This application is still missing required payment proof. The
+            member can upload the remaining file later from the member profile
+            page.
+          </p>
+          <p>
+            Membership fee proof:{" "}
+            {paymentProofStatus.membershipProofRequired
+              ? paymentProofStatus.membershipProofReceived
+                ? "received"
+                : "missing"
+              : "waived / not required"}
+            . T-Shirt and ID proof:{" "}
+            {paymentProofStatus.shirtIdProofReceived ? "received" : "missing"}.
+          </p>
+        </div>
+      ) : null}
+
       <div className="detail-grid">
         <section className="dashboard-panel">
           <h2 className="dashboard-section-title">Applicant summary</h2>
@@ -83,8 +113,16 @@ export default async function ApplicationDetailPage({
               <strong>{formatMembershipType(application.membershipType)}</strong>
             </div>
             <div>
+              <span className="profile-meta-label">Assigned Role</span>
+              <strong>{formatOfficerRoleName(application.officerRoleName)}</strong>
+            </div>
+            <div>
               <span className="profile-meta-label">Payment Mode</span>
               <strong>{formatPaymentMode(application.paymentMode)}</strong>
+            </div>
+            <div>
+              <span className="profile-meta-label">Membership Payment</span>
+              <strong>{formatPaymentCategory(application.paymentCategory)}</strong>
             </div>
             <div>
               <span className="profile-meta-label">Email</span>
@@ -159,51 +197,13 @@ export default async function ApplicationDetailPage({
 
         <section className="dashboard-panel">
           <h2 className="dashboard-section-title">Review actions</h2>
-          <form action={reviewMembershipAction} className="review-form">
-            <input type="hidden" name="applicationId" value={application.id} />
-            <div className="form-group">
-              <label className="form-label" htmlFor="subject">
-                Email subject
-              </label>
-              <div className="form-hint">
-                Leave blank to use the default PNGOSWA email subject for this action.
-              </div>
-              <input
-                id="subject"
-                name="subject"
-                className="form-input"
-                type="text"
-                placeholder="Application update from PNGOSWA"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="message">
-                Reviewer message
-              </label>
-              <div className="form-hint">
-                Optional for accept and reject. For follow-up, your note will be included in the email.
-              </div>
-              <textarea
-                id="message"
-                name="message"
-                className="form-input"
-                rows={8}
-                placeholder="Use this space for follow-up instructions, decision context, or approval notes."
-                defaultValue={application.followUpMessage ?? ""}
-              />
-            </div>
-            <div className="review-actions">
-              <button className="btn btn-primary" type="submit" name="action" value="approve">
-                Accept Membership
-              </button>
-              <button className="btn btn-outline" type="submit" name="action" value="follow-up">
-                Send Follow Up
-              </button>
-              <button className="btn btn-cta" type="submit" name="action" value="reject">
-                Reject Application
-              </button>
-            </div>
-          </form>
+          <ReviewMembershipActionForm
+            actionHandler={reviewMembershipAction}
+            applicationId={application.id}
+            initialMessage={application.followUpMessage ?? ""}
+            initialOfficerRoleName={application.officerRoleName}
+            canAssignOfficerRole={canAssignOfficerRole}
+          />
         </section>
 
         <section className="dashboard-panel detail-grid-full">

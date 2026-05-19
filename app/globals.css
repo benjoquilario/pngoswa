@@ -2609,6 +2609,58 @@ textarea.form-input {
   gap: 0.75rem;
 }
 
+.review-doc-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.review-doc-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border-light);
+  background: #f8fbff;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.review-doc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.review-doc-copy,
+.review-doc-empty {
+  margin: 0;
+  color: var(--ink-secondary);
+  line-height: 1.65;
+  font-size: 0.9rem;
+}
+
+.review-doc-links {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.review-doc-link {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.9rem;
+  background: white;
+  border: 1px solid var(--border-light);
+}
+
+.review-doc-link strong {
+  color: var(--navy-deep);
+}
+
+.review-doc-link span {
+  color: var(--ink-secondary);
+  font-size: 0.86rem;
+}
+
 .doc-card {
   display: flex;
   flex-direction: column;
@@ -2986,6 +3038,10 @@ textarea.form-input {
   }
 
   .dashboard-settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-doc-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

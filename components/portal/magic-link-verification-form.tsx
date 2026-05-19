@@ -1,12 +1,15 @@
 "use client"
 
 import { useActionState } from "react"
+import Link from "next/link"
 
-import {
-  completeMagicLinkSignIn,
-  initialMagicLinkVerificationState,
-  type MagicLinkVerificationState,
-} from "@/app/auth/verify/actions"
+import { completeMagicLinkSignIn } from "@/app/auth/verify/actions"
+
+type MagicLinkVerificationState = {
+  error?: string
+}
+
+const initialMagicLinkVerificationState: MagicLinkVerificationState = {}
 
 type MagicLinkVerificationFormProps = {
   expiresInMinutes: number
@@ -43,6 +46,14 @@ export function MagicLinkVerificationForm({
           aria-live="assertive"
         >
           <p>{state.error}</p>
+          <div className="auth-actions-row">
+            <Link
+              href={scope === "ADMIN" ? "/admin/login" : "/member/login"}
+              className="btn btn-outline"
+            >
+              Back to login
+            </Link>
+          </div>
         </div>
       ) : null}
 

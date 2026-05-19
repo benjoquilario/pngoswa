@@ -14,6 +14,7 @@ import {
   formatPaymentMode,
   getApplicationPaymentProofStatus,
   getApplicationRequirementChecklist,
+  getApplicationRequirementReviewItems,
 } from "@/lib/membership"
 
 type ApplicationDetailPageProps = {
@@ -56,6 +57,7 @@ export default async function ApplicationDetailPage({
 
   const checklist = getApplicationRequirementChecklist(application)
   const paymentProofStatus = getApplicationPaymentProofStatus(application)
+  const requirementReviewItems = getApplicationRequirementReviewItems(application)
 
   return (
     <div className="dashboard-content">
@@ -179,6 +181,57 @@ export default async function ApplicationDetailPage({
 
         <section className="dashboard-panel">
           <h2 className="dashboard-section-title">Submitted documents</h2>
+          <div className="review-doc-grid">
+            {requirementReviewItems.map((item) => (
+              <article key={item.key} className="review-doc-card">
+                <div className="review-doc-head">
+                  <strong>{item.label}</strong>
+                  <span
+                    className={
+                      item.satisfied
+                        ? "status-badge status-badge-success"
+                        : item.optional
+                          ? "status-badge status-badge-info"
+                          : "status-badge status-badge-warning"
+                    }
+                  >
+                    {item.satisfied
+                      ? "Received"
+                      : item.optional
+                        ? "Optional"
+                        : "Missing"}
+                  </span>
+                </div>
+                <p className="review-doc-copy">{item.helperText}</p>
+                {item.documents.length > 0 ? (
+                  <div className="review-doc-links">
+                    {item.documents.map((document) => (
+                      <a
+                        key={document.id}
+                        href={`/api/documents/${document.id}`}
+                        className="review-doc-link"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <strong>{document.label}</strong>
+                        <span>{document.originalName}</span>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="review-doc-empty">
+                    {item.optional
+                      ? "No file uploaded for this optional requirement."
+                      : "No file uploaded yet for this required item."}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="dashboard-panel">
+          <h2 className="dashboard-section-title">All uploaded files</h2>
           <div className="doc-list">
             {application.documents.map((document) => (
               <a

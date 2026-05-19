@@ -1520,6 +1520,157 @@ export function getApplicationRequirementChecklist(application: {
   ]
 }
 
+type ApplicationReviewDocument = {
+  id: string
+  type: string
+  label: string
+  originalName: string
+}
+
+type ApplicationReviewDocumentItem = {
+  key: string
+  label: string
+  satisfied: boolean
+  optional?: boolean
+  helperText: string
+  documents: ApplicationReviewDocument[]
+}
+
+function formatMembershipPaymentProofLabel(paymentCategory: string | null) {
+  switch (paymentCategory) {
+    case "REGULAR_ANNUAL_MEMBERSHIP":
+      return "Proof of Payment (Regular)"
+    case "LIFETIME_NO_ANNUAL_MEMBERSHIP":
+      return "Proof of Payment (Lifetime)"
+    case "WAIVED_FREE_MEMBERSHIP":
+    default:
+      return "Proof of Payment (Waived / Free Membership)"
+  }
+}
+
+function getDocumentsForTypes(
+  documents: ApplicationReviewDocument[],
+  types: string[]
+) {
+  const typeSet = new Set(types)
+
+  return documents.filter((document) => typeSet.has(document.type))
+}
+
+export function getApplicationRequirementReviewItems(application: {
+  membershipType: string
+  paymentCategory: string | null
+  prcLicense: string | null
+  isConventionAttendee: boolean
+  documents: ApplicationReviewDocument[]
+}) {
+  const paymentStatus = getApplicationPaymentProofStatus(application)
+  const membershipPaymentProofDocuments = getDocumentsForTypes(
+    application.documents,
+    ["MEMBERSHIP_PAYMENT_PROOF", "PAYMENT_PROOF"]
+  )
+  const shirtIdPaymentProofDocuments = getDocumentsForTypes(application.documents, [
+    "SHIRT_ID_PAYMENT_PROOF",
+    "PAYMENT_PROOF",
+  ])
+
+  return [
+    {
+      key: "resume",
+      label: "CV / Resume",
+      satisfied: application.documents.some((document) => document.type === "RESUME"),
+      helperText: "Main applicant resume or curriculum vitae.",
+      documents: getDocumentsForTypes(application.documents, ["RESUME"]),
+    },
+    {
+      key: "employment-proof",
+      label: "Proof of Employment / Leadership Role",
+      satisfied:
+        application.membershipType === "HONORARY" ||
+        application.documents.some(
+          (document) => document.type === "EMPLOYMENT_PROOF"
+        ),
+      optional: application.membershipType === "HONORARY",
+      helperText:
+        application.membershipType === "HONORARY"
+          ? "Not required for honorary applications."
+          : "Required for regular and lifetime applications.",
+      documents: getDocumentsForTypes(application.documents, ["EMPLOYMENT_PROOF"]),
+    },
+    {
+      key: "endorsement",
+      label: "Recommendation / Endorsement",
+      satisfied:
+        application.membershipType !== "HONORARY" ||
+        application.documents.some((document) => document.type === "ENDORSEMENT"),
+      optional: application.membershipType !== "HONORARY",
+      helperText:
+        application.membershipType === "HONORARY"
+          ? "Required for honorary applications."
+          : "Optional unless PNGOSWA requests it later.",
+      documents: getDocumentsForTypes(application.documents, ["ENDORSEMENT"]),
+    },
+    {
+      key: "attendance-certificate",
+      label: "Certificate of Participation / Attendance",
+      satisfied:
+        !application.isConventionAttendee ||
+        application.documents.some(
+          (document) => document.type === "ATTENDANCE_CERTIFICATE"
+        ),
+      optional: !application.isConventionAttendee,
+      helperText:
+        application.isConventionAttendee
+          ? "Required for convention attendee applications."
+          : "Not required for regular applicants.",
+      documents: getDocumentsForTypes(application.documents, [
+        "ATTENDANCE_CERTIFICATE",
+      ]),
+    },
+    {
+      key: "membership-payment-proof",
+      label: formatMembershipPaymentProofLabel(application.paymentCategory),
+      satisfied: paymentStatus.membershipProofReceived,
+      optional: !paymentStatus.membershipProofRequired,
+      helperText: paymentStatus.membershipProofRequired
+        ? `Required for ${formatPaymentCategory(
+            application.paymentCategory ?? "WAIVED_FREE_MEMBERSHIP"
+          ).toLowerCase()}.`
+        : "Not required because the membership payment is waived.",
+      documents: membershipPaymentProofDocuments,
+    },
+    {
+      key: "shirt-id-payment-proof",
+      label: "Proof of Payment (T-Shirt and ID)",
+      satisfied: paymentStatus.shirtIdProofReceived,
+      helperText:
+        "Required for all applicants, including convention attendees and waived memberships.",
+      documents: shirtIdPaymentProofDocuments,
+    },
+    {
+      key: "id-photo",
+      label: "2x2 ID Photo",
+      satisfied: application.documents.some((document) => document.type === "ID_PHOTO"),
+      helperText: "Used for the official member ID.",
+      documents: getDocumentsForTypes(application.documents, ["ID_PHOTO"]),
+    },
+    {
+      key: "prc-license",
+      label: "PRC License Copy",
+      satisfied:
+        !application.prcLicense ||
+        application.prcLicense.trim().length === 0 ||
+        application.documents.some((document) => document.type === "PRC_LICENSE"),
+      optional: !application.prcLicense,
+      helperText:
+        application.prcLicense && application.prcLicense.trim().length > 0
+          ? "Required because the applicant entered a PRC license number."
+          : "Optional because no PRC license number was provided.",
+      documents: getDocumentsForTypes(application.documents, ["PRC_LICENSE"]),
+    },
+  ] satisfies ApplicationReviewDocumentItem[]
+}
+
 function parseUploadedMemberDocument(
   value: unknown,
   fieldName: string,

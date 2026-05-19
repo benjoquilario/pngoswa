@@ -18,11 +18,9 @@ import {
   SECURITY_RATE_LIMITS,
 } from "@/lib/security"
 
-export type MagicLinkVerificationState = {
+type MagicLinkVerificationState = {
   error?: string
 }
-
-const initialState: MagicLinkVerificationState = {}
 
 export async function completeMagicLinkSignIn(
   _state: MagicLinkVerificationState,
@@ -75,5 +73,3 @@ export async function completeMagicLinkSignIn(
   await setPortalSessionCookie(scope, session.rawSessionToken, session.expiresAt)
   redirect(getPortalRedirectPath(scope))
 }
-
-export { initialState as initialMagicLinkVerificationState }
